@@ -1,0 +1,8 @@
+{
+  "name": "Vedra bi Beta V1.2.0",
+  "description": "Vedra bi",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

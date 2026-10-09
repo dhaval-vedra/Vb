@@ -1,0 +1,150 @@
+/* ==========================================================================
+   Small Menu Bar (Operations & Quick Tools Bar) - Ultra Compact & Sleek
+   ========================================================================== */
+
+.small-menu-bar {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    padding: 3px 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    min-height: 34px !important;
+    max-height: 38px !important;
+    z-index: 1010 !important;
+}
+
+/* Icon-Only Tool Buttons Styling - Compact 28x28px */
+.small-menu-bar .btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 27px !important;
+    min-width: 27px !important;
+    height: 27px !important;
+    padding: 0 !important;
+    border-radius: 6px !important;
+    font-size: 11px !important;
+    border: 1px solid #e2e8f0 !important;
+    background-color: #ffffff !important;
+    color: #475569 !important;
+    transition: all 0.12s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+    position: relative !important;
+}
+
+/* Hide any text labels in small menu bar */
+.small-menu-bar .btn span:not(.badge):not(#savedViewsCountBadge) {
+    display: none !important;
+}
+
+/* Compact dropdown arrow on icon buttons */
+.small-menu-bar .btn.dropdown-toggle::after {
+    display: none !important;
+}
+
+.small-menu-bar .btn i {
+    font-size: 0.85rem !important;
+    line-height: 1 !important;
+    color: #475569 !important;
+    transition: color 0.12s ease !important;
+}
+
+/* Tool Button Hover and Active States */
+.small-menu-bar .btn:hover {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    color: #0284c7 !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.small-menu-bar .btn:hover i {
+    color: #0284c7 !important;
+    transform: none !important;
+}
+
+.small-menu-bar .btn:active {
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Primary Action Buttons */
+.small-menu-bar .btn-primary {
+    background-color: #0284c7 !important;
+    border-color: #0284c7 !important;
+    color: #ffffff !important;
+}
+
+.small-menu-bar .btn-primary i {
+    color: #ffffff !important;
+}
+
+.small-menu-bar .btn-primary:hover {
+    background-color: #0369a1 !important;
+    border-color: #0369a1 !important;
+    color: #ffffff !important;
+}
+
+.small-menu-bar .btn-primary:hover i {
+    color: #ffffff !important;
+}
+
+/* Lock Button States */
+#toggleLockModeBtn.locked,
+#toggleLockModeBtn.btn-outline-danger {
+    background-color: #fef2f2 !important;
+    border-color: #fca5a5 !important;
+    color: #dc2626 !important;
+}
+
+#toggleLockModeBtn.locked i,
+#toggleLockModeBtn.btn-outline-danger i {
+    color: #dc2626 !important;
+}
+
+/* Autosave Badge */
+#autosaveStatusBadge {
+    width: 27px !important;
+    min-width: 27px !important;
+    height: 27px !important;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px !important;
+}
+
+#autosaveStatusBadge span {
+    display: none !important;
+}
+
+/* Dark Theme Overrides */
+body.dark-theme .small-menu-bar {
+    background-color: #161b22 !important;
+    border-color: #30363d !important;
+}
+
+body.dark-theme .small-menu-bar .btn {
+    background-color: #0d1117 !important;
+    border-color: #30363d !important;
+    color: #94a3b8 !important;
+}
+
+body.dark-theme .small-menu-bar .btn i {
+    color: #94a3b8 !important;
+}
+
+body.dark-theme .small-menu-bar .btn:hover {
+    background-color: #1f2937 !important;
+    border-color: #475569 !important;
+    color: #38bdf8 !important;
+}
+
+body.dark-theme .small-menu-bar .btn:hover i {
+    color: #38bdf8 !important;
+}
+
+body.dark-theme #autosaveStatusBadge {
+    background-color: #0d1117 !important;
+    border-color: #30363d !important;
+}

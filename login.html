@@ -1,0 +1,2145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vedra BI - Professional Sign In</title>
+    <!-- Import Google Fonts: Plus Jakarta Sans & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        // Circular-Safe JSON Serialization & Console Shield (Prevents iframe bridge crash on circular objects)
+        (function() {
+            try {
+                const originalStringify = JSON.stringify;
+                function getCircularReplacer() {
+                    const seen = new WeakSet();
+                    return function(key, value) {
+                        if (typeof value === 'object' && value !== null) {
+                            if (seen.has(value)) {
+                                return '[Circular]';
+                            }
+                            seen.add(value);
+                        }
+                        return value;
+                    };
+                }
+
+                JSON.stringify = function(value, replacer, space) {
+                    try {
+                        return originalStringify.call(JSON, value, replacer, space);
+                    } catch (err) {
+                        if (err && (String(err).includes('circular') || String(err).includes('Converting circular structure to JSON'))) {
+                            try {
+                                const safeReplacer = (typeof replacer === 'function') 
+                                    ? function(k, v) {
+                                        const seen = (safeReplacer._seen || (safeReplacer._seen = new WeakSet()));
+                                        if (typeof v === 'object' && v !== null) {
+                                            if (seen.has(v)) return '[Circular]';
+                                            seen.add(v);
+                                        }
+                                        return replacer(k, v);
+                                    }
+                                    : getCircularReplacer();
+                                return originalStringify.call(JSON, value, safeReplacer, space);
+                            } catch (_) {
+                                return '"[Circular Object]"';
+                            }
+                        }
+                        throw err;
+                    }
+                };
+
+                const logMethods = ['warn', 'error', 'log', 'info', 'debug'];
+                logMethods.forEach(function(method) {
+                    if (typeof console !== 'undefined' && console[method]) {
+                        const orig = console[method];
+                        console[method] = function(...args) {
+                            try {
+                                orig.apply(console, args);
+                            } catch (e) {
+                                try {
+                                    const safeArgs = args.map(function(a) {
+                                        if (typeof a === 'object' && a !== null) {
+                                            try { return JSON.parse(JSON.stringify(a)); } catch (_) { return String(a); }
+                                        }
+                                        return a;
+                                    });
+                                    orig.apply(console, safeArgs);
+                                } catch (_) {}
+                            }
+                        };
+                    }
+                });
+            } catch (_) {}
+        })();
+    </script>
+
+    <script>
+        // Immediate Auth Check - Redirect to dashboard if already logged in AND security verified
+        (function() {
+            try {
+                const pathname = window.location.pathname.toLowerCase();
+                if (!pathname.includes('login')) return; // Only run when actually on login page
+
+                const search = window.location.search;
+                if (search.includes('setup_security') || search.includes('verify_security') || search.includes('onboarding')) {
+                    return; // Allow login.html to load security setup/verify/onboarding tab
+                }
+
+                const saved = localStorage.getItem('vedrabi_current_user');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    const isValid = parsed && typeof parsed === 'object' && 
+                                    parsed.uid && typeof parsed.uid === 'string' && parsed.uid !== 'guest_user' && parsed.uid.trim() !== '' && 
+                                    parsed.email && typeof parsed.email === 'string' && parsed.email !== 'guest@vedrabi.com' && parsed.email.trim() !== '';
+                    if (isValid) {
+                        const email = (parsed.email || parsed.uid || '').toLowerCase().trim();
+                        const secAccounts = JSON.parse(localStorage.getItem('vedrabi_security_accounts') || '{}');
+                        const userSec = secAccounts[email];
+
+                        const isSecSetup = userSec && userSec.accountId && (userSec.pinHash || (userSec.securityPin && userSec.securityPin.length === 8));
+                        const isSecVerified = parsed.securityPinVerified === true;
+
+                        const onboardings = JSON.parse(localStorage.getItem('vedrabi_user_onboardings') || '{}');
+                        const isOnboarded = Boolean(onboardings[email] && onboardings[email].completedAt);
+
+                        // Only redirect to dashboard if security PIN setup, session verification, AND onboarding are complete
+                        if (isSecSetup && isSecVerified && isOnboarded) {
+                            if (!window.location.href.includes('index.html')) {
+                                window.location.replace('index.html');
+                            }
+                        }
+                    } else {
+                        localStorage.removeItem('vedrabi_current_user');
+                    }
+                }
+            } catch(e) {
+                localStorage.removeItem('vedrabi_current_user');
+            }
+        })();
+    </script>
+
+    <script>
+        // Instant Toast Notification Engine for Redirection Reasons
+        (function() {
+            document.addEventListener('DOMContentLoaded', function() {
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const reason = urlParams.get('reason');
+                    if (!reason) return;
+
+                    const messages = {
+                        timeout: {
+                            title: 'Session Timed Out',
+                            text: 'Your session expired due to 30 minutes of inactivity. Please sign in with your security password to continue.',
+                            bg: 'rgba(217, 119, 6, 0.95)',
+                            border: '#f59e0b',
+                            icon: 'bi-clock-history'
+                        },
+                        unauthorized: {
+                            title: 'Unauthorized Access',
+                            text: 'Please sign in to your account to view the secure analytics dashboard.',
+                            bg: 'rgba(220, 38, 38, 0.95)',
+                            border: '#ef4444',
+                            icon: 'bi-shield-lock-fill'
+                        },
+                        logout: {
+                            title: 'Successfully Signed Out',
+                            text: 'You have been safely signed out of your Vedra BI account.',
+                            bg: 'rgba(16, 185, 129, 0.95)',
+                            border: '#10b981',
+                            icon: 'bi-box-arrow-right'
+                        },
+                        security_required: {
+                            title: 'Security Verification Required',
+                            text: 'Please enter your 8-digit security password to continue your session.',
+                            bg: 'rgba(99, 102, 241, 0.95)',
+                            border: '#6366f1',
+                            icon: 'bi-key-fill'
+                        }
+                    };
+
+                    const config = messages[reason];
+                    if (!config) return;
+
+                    // Create Toast banner
+                    const toast = document.createElement('div');
+                    toast.id = 'auth-reason-toast';
+                    toast.style.cssText = `
+                        position: fixed;
+                        top: 24px;
+                        right: 24px;
+                        z-index: 999999;
+                        max-width: 440px;
+                        width: calc(100% - 48px);
+                        background: ${config.bg};
+                        color: #ffffff;
+                        border-left: 5px solid ${config.border};
+                        border-radius: 12px;
+                        padding: 14px 18px;
+                        box-shadow: 0 15px 35px rgba(0,0,0,0.45);
+                        backdrop-filter: blur(12px);
+                        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+                        display: flex;
+                        align-items: flex-start;
+                        gap: 12px;
+                        transform: translateY(-20px);
+                        opacity: 0;
+                        transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+                    `;
+
+                    toast.innerHTML = `
+                        <div style="font-size: 22px; line-height: 1; margin-top: 1px;">
+                            <i class="bi ${config.icon}"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 700; font-size: 14px; margin-bottom: 3px; letter-spacing: -0.2px;">${config.title}</div>
+                            <div style="font-size: 12.5px; opacity: 0.92; line-height: 1.45;">${config.text}</div>
+                        </div>
+                        <button type="button" onclick="this.parentElement.remove()" style="background:none; border:none; color:white; font-size:20px; cursor:pointer; opacity:0.85; padding:0; margin-left:6px; line-height:1;">&times;</button>
+                    `;
+
+                    document.body.appendChild(toast);
+
+                    // Smooth Entrance
+                    requestAnimationFrame(() => {
+                        toast.style.transform = 'translateY(0)';
+                        toast.style.opacity = '1';
+                    });
+
+                    // Clean URL parameter without page reload
+                    const cleanUrl = window.location.pathname + window.location.hash;
+                    window.history.replaceState({}, document.title, cleanUrl);
+                } catch (_) {}
+            });
+        })();
+    </script>
+
+    <script>
+        // Global Error Prevention & Recovery Engine
+        window.addEventListener('error', function(event) {
+            handleGlobalError(event.error || { message: event.message }, event.filename, event.lineno, event.colno);
+        });
+        window.addEventListener('unhandledrejection', function(event) {
+            handleGlobalError(event.reason || new Error(event.reason), null, null, null);
+        });
+
+        function handleGlobalError(error, source, lineno, colno) {
+            // Ignore benign development server / Vite websocket / HMR / network errors
+            const errMsg = error ? (error.message || String(error)) : '';
+            const errStack = (error && error.stack) ? error.stack : '';
+            const errSrc = source ? String(source) : '';
+            const lowerMsg = (errMsg + ' ' + errStack + ' ' + errSrc).toLowerCase();
+            
+            if (
+                !lowerMsg.trim() ||
+                lowerMsg.includes('websocket') ||
+                lowerMsg.includes('vite') ||
+                lowerMsg.includes('hmr') ||
+                lowerMsg.includes('hot-update') ||
+                lowerMsg.includes('resizeobserver') ||
+                lowerMsg.includes('speech') ||
+                lowerMsg.includes('canceled') ||
+                lowerMsg.includes('abort') ||
+                lowerMsg.includes('failed to fetch') ||
+                lowerMsg.includes('networkerror') ||
+                lowerMsg.includes('chrome-extension') ||
+                lowerMsg.includes('script error') ||
+                lowerMsg.includes('converting circular structure to json') ||
+                lowerMsg.includes('circular structure') ||
+                lowerMsg.includes('closes the circle') ||
+                lowerMsg.includes('_aistudio-iframe')
+            ) {
+                return;
+            }
+
+            console.error('[Global Error Caught]:', error, source, lineno, colno);
+            
+            // Only show if the overlay doesn't already exist to prevent duplicate triggers
+            if (document.getElementById('global-error-overlay')) return;
+            
+            const errorMessage = error ? (error.message || String(error)) : 'Unknown Error';
+            const errorStack = error ? (error.stack || '') : '';
+            const locationInfo = source ? `File: ${source}:${lineno}:${colno}` : 'In-line or Async Execution';
+            
+            const isDark = document.documentElement.classList.contains('dark-theme') || localStorage.getItem('theme') === 'dark';
+            
+            const overlay = document.createElement('div');
+            overlay.id = 'global-error-overlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background-color: ${isDark ? 'rgba(11, 15, 25, 0.96)' : 'rgba(248, 250, 252, 0.96)'};
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                color: ${isDark ? '#f8fafc' : '#0f172a'};
+                z-index: 99999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                padding: 24px;
+                overflow-y: auto;
+                box-sizing: border-box;
+            `;
+            
+            overlay.innerHTML = `
+                <div style="
+                    max-width: 560px;
+                    width: 100%;
+                    background: ${isDark ? '#111827' : '#ffffff'};
+                    border: 1px solid ${isDark ? '#1f2937' : '#e2e8f0'};
+                    border-radius: 16px;
+                    padding: 36px 32px;
+                    box-shadow: 0 20px 40px -15px ${isDark ? 'rgba(0,0,0,0.7)' : 'rgba(15,23,42,0.12)'};
+                    text-align: center;
+                ">
+                    <!-- Vedra BI Resilience Badge -->
+                    <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: ${isDark ? 'rgba(59,130,246,0.12)' : 'rgba(37,99,235,0.08)'}; color: ${isDark ? '#60a5fa' : '#2563eb'}; border: 1px solid ${isDark ? 'rgba(59,130,246,0.25)' : 'rgba(37,99,235,0.18)'}; margin-bottom: 20px;">
+                        <i class="bi bi-shield-lock-fill"></i> Vedra BI System Diagnostic
+                    </div>
+
+                    <!-- Icon Container -->
+                    <div style="
+                        width: 56px;
+                        height: 56px;
+                        margin: 0 auto 18px;
+                        border-radius: 14px;
+                        background: ${isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)'};
+                        border: 1px solid ${isDark ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)'};
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #ef4444;
+                        font-size: 26px;
+                    ">
+                        <i class="bi bi-exclamation-octagon-fill"></i>
+                    </div>
+                    
+                    <!-- Title -->
+                    <h3 style="font-weight: 700; font-size: 20px; margin-bottom: 8px; color: ${isDark ? '#f8fafc' : '#0f172a'}; letter-spacing: -0.3px;">
+                        Application Exception Intercepted
+                    </h3>
+                    <p style="font-size: 14px; line-height: 1.55; color: ${isDark ? '#94a3b8' : '#64748b'}; margin-bottom: 24px;">
+                        An unexpected runtime issue occurred. In-memory data safeguards have preserved your state. Use the controls below to resume your workspace.
+                    </p>
+                    
+                    <!-- Action Grid -->
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px;">
+                        <button onclick="window.location.reload()" style="
+                            padding: 11px 20px;
+                            background: #2563eb;
+                            color: #ffffff;
+                            border: none;
+                            border-radius: 8px;
+                            font-weight: 600;
+                            font-size: 14px;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 8px;
+                            box-shadow: 0 4px 12px rgba(37,99,235,0.22);
+                            transition: background-color 0.18s ease;
+                        ">
+                            <i class="bi bi-arrow-clockwise"></i> Reload Session & Reconnect
+                        </button>
+                        
+                        <a href="index.html" style="
+                            text-decoration: none;
+                            padding: 11px 20px;
+                            background: ${isDark ? '#1f2937' : '#f1f5f9'};
+                            color: ${isDark ? '#f8fafc' : '#0f172a'};
+                            border: 1px solid ${isDark ? '#374151' : '#cbd5e1'};
+                            border-radius: 8px;
+                            font-weight: 600;
+                            font-size: 14px;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 8px;
+                            transition: all 0.18s ease;
+                        ">
+                            <i class="bi bi-speedometer2"></i> Return to Main Dashboard
+                        </a>
+
+                        <button onclick="if(confirm('Reset local cache and workspace preferences? This will refresh your analytical workspace.')) { localStorage.clear(); sessionStorage.clear(); window.location.reload(); }" style="
+                            padding: 10px 18px;
+                            background: transparent;
+                            color: ${isDark ? '#94a3b8' : '#64748b'};
+                            border: 1px solid ${isDark ? '#374151' : '#e2e8f0'};
+                            border-radius: 8px;
+                            font-weight: 500;
+                            font-size: 13px;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 8px;
+                            transition: all 0.18s ease;
+                        ">
+                            <i class="bi bi-arrow-counterclockwise"></i> Safe Mode Reset (Clear Cache)
+                        </button>
+                    </div>
+                    
+                    <!-- Technical Diagnostics Accordion -->
+                    <details style="text-align: left; background: ${isDark ? '#0b0f19' : '#f8fafc'}; border: 1px solid ${isDark ? '#1f2937' : '#e2e8f0'}; border-radius: 10px; padding: 12px 14px;">
+                        <summary style="cursor: pointer; font-size: 13px; font-weight: 600; color: ${isDark ? '#60a5fa' : '#2563eb'}; outline: none; user-select: none; display: flex; align-items: center; justify-content: space-between;">
+                            <span style="display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="bi bi-terminal-fill"></i> Technical Diagnostic Details
+                            </span>
+                            <span style="font-size: 11px; opacity: 0.7;">Click to inspect</span>
+                        </summary>
+                        <div style="margin-top: 10px; font-size: 12px; font-family: 'JetBrains Mono', monospace; white-space: pre-wrap; word-break: break-all; max-height: 180px; overflow-y: auto; color: ${isDark ? '#94a3b8' : '#334155'}; background: ${isDark ? '#070a12' : '#ffffff'}; padding: 10px; border-radius: 6px; border: 1px solid ${isDark ? '#1f2937' : '#e2e8f0'};">
+<strong style="color: #ef4444;">Error:</strong> ${errorMessage}
+<strong style="color: ${isDark ? '#60a5fa' : '#2563eb'};">Source:</strong> ${locationInfo}
+${errorStack ? `\n<strong style="color: ${isDark ? '#cbd5e1' : '#64748b'};">Stack Trace:</strong>\n${errorStack}` : ''}
+                        </div>
+                    </details>
+                </div>
+            `;
+            
+            document.body.appendChild(overlay);
+        }
+
+        // Early CDN Fallback engine
+        window.handleCdnError = function(element, fallbackUrl) {
+            console.error('[CDN Fallback Engine] Failed to load resource:', element.src || element.href);
+            if (element.dataset.fallbackTried === 'true') return;
+            
+            if (element.tagName === 'SCRIPT') {
+                const script = document.createElement('script');
+                script.src = fallbackUrl;
+                script.dataset.fallbackTried = 'true';
+                script.onload = () => console.log('[CDN Fallback Engine] Loaded fallback:', fallbackUrl);
+                script.onerror = () => handleGlobalError(new Error('Failed to load critical script ' + fallbackUrl));
+                document.head.appendChild(script);
+            } else if (element.tagName === 'LINK') {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = fallbackUrl;
+                link.dataset.fallbackTried = 'true';
+                link.onload = () => console.log('[CDN Fallback Engine] Loaded fallback stylesheet:', fallbackUrl);
+                document.head.appendChild(link);
+            }
+        };
+    </script>
+    
+    <!-- Zero-FOUC Theme Pre-Initialization Engine (Synchronous Head Execution) -->
+    <script>
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('theme') || ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light');
+                const isDark = savedTheme === 'dark';
+                const root = document.documentElement;
+                if (isDark) {
+                    root.classList.add('dark-theme');
+                    root.classList.remove('silk-light-theme');
+                    root.setAttribute('data-bs-theme', 'dark');
+                    root.style.colorScheme = 'dark';
+                } else {
+                    root.classList.remove('dark-theme');
+                    root.classList.add('silk-light-theme');
+                    root.setAttribute('data-bs-theme', 'light');
+                    root.style.colorScheme = 'light';
+                }
+            } catch (e) {}
+        })();
+    </script>
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" onerror="handleCdnError(this, 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css')">
+    <!-- Bootstrap CSS for layout grids -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" onerror="handleCdnError(this, 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css')">
+
+    <style>
+        /* Modern CSS variables for styling */
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #10b981;
+            --success-hover: #059669;
+            --dark: #0f172a;
+            --dark-light: #1e293b;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-700: #334155;
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        }
+
+        /* Base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: var(--font-sans);
+        }
+
+        body {
+            background-color: #f1f5f9;
+            color: #1e293b;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            position: relative;
+            padding: 20px;
+        }
+
+        /* Container & Split Layout */
+        .auth-container {
+            width: 100%;
+            max-width: 1120px;
+            min-height: 680px;
+            background: #ffffff;
+            border-radius: 24px;
+            overflow: hidden;
+            position: relative;
+            z-index: 2;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        /* Right Branding Panel (Showcase) */
+        .branding-panel {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            padding: 48px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+            color: #ffffff;
+        }
+
+        .branding-panel::before {
+            content: '';
+            position: absolute;
+            top: -200px;
+            right: -200px;
+            width: 450px;
+            height: 450px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
+            pointer-events: none;
+        }
+
+        .branding-content {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .branding-title {
+            font-family: var(--font-display);
+            font-size: 32px;
+            font-weight: 800;
+            line-height: 1.25;
+            letter-spacing: -0.5px;
+            color: #ffffff;
+            margin-bottom: 16px;
+        }
+
+        .branding-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.85);
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+
+        /* Mock Dashboard Styles */
+        .mock-dashboard {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            position: relative;
+            margin-top: 10px;
+        }
+
+        .bar-column {
+            transition: all 0.3s ease;
+        }
+        
+        .bar-track {
+            height: 110px;
+            background: #f1f5f9;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .bar-fill {
+            background: #2563eb;
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+            border-radius: 4px;
+            transition: height 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .custom-tooltip {
+            background: #0f172a;
+            color: #ffffff;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 11px;
+            position: absolute;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            z-index: 20;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .tooltip-arrow {
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid #0f172a;
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* Floating Category Ring Card */
+        .donut-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 12px 14px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+            width: 130px;
+            position: absolute;
+            right: -25px;
+            top: 20px;
+            z-index: 25;
+            border: 1px solid #f1f5f9;
+            animation: floatEffect 4s ease-in-out infinite;
+        }
+
+        @keyframes floatEffect {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .donut-svg {
+            transform: rotate(-90deg);
+        }
+
+        /* Slider dot indicator */
+        .dots-indicator {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-start;
+            margin-top: 16px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dot.active {
+            background: #ffffff;
+            width: 24px;
+            border-radius: 4px;
+        }
+
+        /* Left Auth Card Panel (Form) */
+        .form-panel {
+            padding: 48px 56px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: #ffffff;
+        }
+
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 32px;
+        }
+
+        .brand-logo-img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+
+        .brand-name {
+            font-family: var(--font-display);
+            font-size: 21px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            color: #1e3a8a;
+        }
+
+        .form-header {
+            margin-bottom: 24px;
+        }
+
+        .form-header-title {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 28px;
+            color: #1e293b;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+        }
+
+        .form-header-subtitle {
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        /* Inputs & Labels */
+        .input-group-custom {
+            position: relative;
+            margin-bottom: 18px;
+        }
+
+        .form-label-custom {
+            display: block;
+            font-weight: 500;
+            font-size: 13px;
+            color: #475569;
+            margin-bottom: 6px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 16px;
+            color: #94a3b8;
+            font-size: 16px;
+            pointer-events: none;
+            transition: color 0.3s ease;
+        }
+
+        .form-control-custom {
+            width: 100%;
+            height: 46px;
+            padding: 0 16px 0 46px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            color: #1e293b;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control-custom::placeholder {
+            color: #94a3b8;
+        }
+
+        .form-control-custom:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 4px rgba(37, 99, 237, 0.1);
+        }
+
+        .form-control-custom:focus + .input-icon {
+            color: #2563eb;
+        }
+
+        /* Eye Button for Password */
+        .password-toggle-btn {
+            position: absolute;
+            right: 16px;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            transition: color 0.3s ease;
+        }
+
+        .password-toggle-btn:hover {
+            color: #64748b;
+        }
+
+        /* Remeber Me & Forgot Password Row */
+        .remember-forgot-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .remember-forgot-row label {
+            color: #475569;
+            font-weight: 500;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .remember-forgot-row a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .remember-forgot-row a:hover {
+            text-decoration: underline;
+        }
+
+        /* Alert Notification */
+        .alert-custom {
+            display: none;
+            padding: 10px 14px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            color: #991b1b;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            animation: slideIn 0.3s ease;
+        }
+
+        /* --- Password Strength Meter Styles --- */
+        .password-strength-wrapper {
+            margin-top: 8px;
+            margin-bottom: 16px;
+            padding: 10px 13px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            animation: slideIn 0.25s ease;
+        }
+
+        .strength-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+
+        .strength-title-text {
+            font-weight: 600;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .strength-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .strength-badge-empty {
+            background: #e2e8f0;
+            color: #64748b;
+        }
+
+        .strength-badge-vweak {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
+        .strength-badge-weak {
+            background: #ffedd5;
+            color: #c2410c;
+            border: 1px solid #fed7aa;
+        }
+
+        .strength-badge-fair {
+            background: #fef9c3;
+            color: #854d0e;
+            border: 1px solid #fef08a;
+        }
+
+        .strength-badge-strong {
+            background: #dbeafe;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+        }
+
+        .strength-badge-vstrong {
+            background: #d1fae5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+        }
+
+        .strength-meter-bar-track {
+            display: flex;
+            gap: 5px;
+            height: 6px;
+            margin-bottom: 9px;
+            width: 100%;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .strength-meter-segment {
+            flex: 1;
+            height: 100%;
+            background: #e2e8f0;
+            border-radius: 4px;
+            transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease;
+        }
+
+        .strength-criteria-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px 10px;
+            margin-bottom: 6px;
+            font-size: 11px;
+        }
+
+        @media (max-width: 576px) {
+            .strength-criteria-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .strength-criterion {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #64748b;
+            font-size: 11px;
+            transition: all 0.25s ease;
+        }
+
+        .strength-criterion i {
+            font-size: 12px;
+            color: #94a3b8;
+            transition: color 0.25s ease, transform 0.25s ease;
+        }
+
+        .strength-criterion.met {
+            color: #047857;
+            font-weight: 600;
+        }
+
+        .strength-criterion.met i {
+            color: #10b981;
+            transform: scale(1.1);
+        }
+
+        .strength-hint-text {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 4px;
+            line-height: 1.4;
+            border-top: 1px dashed #e2e8f0;
+            padding-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Buttons and Actions */
+        .actions-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-custom {
+            height: 46px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            width: 100%;
+        }
+
+        .btn-custom:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-custom-primary {
+            background: #2563eb;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+        }
+
+        .btn-custom-primary:hover:not(:disabled) {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .btn-custom-secondary {
+            background: #f8fafc;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-custom-secondary:hover:not(:disabled) {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+            color: #1e293b;
+        }
+
+        .btn-custom-google {
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-custom-google:hover:not(:disabled) {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        .btn-custom-google i {
+            color: #ea4335;
+            font-size: 15px;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 14px 0;
+            color: #94a3b8;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .divider:not(:empty)::before {
+            margin-right: .5em;
+        }
+
+        .divider:not(:empty)::after {
+            margin-left: .5em;
+        }
+
+        .signup-toggle-footer {
+            text-align: center;
+            font-size: 13.5px;
+            color: #64748b;
+            margin-top: 24px;
+        }
+
+        .signup-toggle-footer span {
+            color: #2563eb;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .signup-toggle-footer span:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive Layout Adjustments */
+        @media (max-width: 991.98px) {
+            .branding-panel {
+                display: none; /* Hide preview showcase on mobile */
+            }
+            .form-panel {
+                padding: 40px;
+            }
+            .auth-container {
+                max-width: 500px;
+                margin: 16px;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .fade-in-animated {
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        /* Dark mode overrides for login.html */
+        body.dark-theme {
+            background-color: #0d1117 !important;
+            color: #c9d1d9 !important;
+        }
+        body.dark-theme .auth-container {
+            background-color: #161b22 !important;
+            border-color: #30363d !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+        }
+        body.dark-theme .form-panel {
+            background-color: #161b22 !important;
+            color: #c9d1d9 !important;
+        }
+        body.dark-theme .form-header-title {
+            color: #ffffff !important;
+        }
+        body.dark-theme .form-label {
+            color: #8b949e !important;
+        }
+        body.dark-theme .form-control {
+            background-color: #0d1117 !important;
+            border-color: #30363d !important;
+            color: #c9d1d9 !important;
+        }
+        body.dark-theme .form-control:focus {
+            background-color: #0d1117 !important;
+            color: #ffffff !important;
+            border-color: #58a6ff !important;
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15) !important;
+        }
+        body.dark-theme .brand-name {
+            color: #58a6ff !important;
+        }
+        body.dark-theme .mock-dashboard {
+            background-color: #0d1117 !important;
+            border-color: #30363d !important;
+            color: #c9d1d9 !important;
+        }
+        body.dark-theme .mock-dashboard .text-dark,
+        body.dark-theme .mock-dashboard p,
+        body.dark-theme .mock-dashboard h6 {
+            color: #c9d1d9 !important;
+        }
+        body.dark-theme .bar-track {
+            background-color: #161b22 !important;
+        }
+        body.dark-theme .donut-card {
+            background-color: #161b22 !important;
+            border-color: #30363d !important;
+            color: #c9d1d9 !important;
+        }
+        body.dark-theme .donut-card .text-dark {
+            color: #c9d1d9 !important;
+        }
+        body.dark-theme .text-muted {
+            color: #8b949e !important;
+        }
+        body.dark-theme .btn-custom-secondary {
+            background-color: #21262d !important;
+            color: #c9d1d9 !important;
+            border-color: #30363d !important;
+        }
+        body.dark-theme .btn-custom-secondary:hover:not(:disabled) {
+            background-color: #30363d !important;
+            border-color: #8b949e !important;
+            color: #ffffff !important;
+        }
+        body.dark-theme .btn-custom-google {
+            background-color: #21262d !important;
+            color: #c9d1d9 !important;
+            border-color: #30363d !important;
+        }
+        body.dark-theme .btn-custom-google:hover:not(:disabled) {
+            background-color: #30363d !important;
+            border-color: #8b949e !important;
+        }
+        body.dark-theme .divider::before, body.dark-theme .divider::after {
+            border-color: #30363d !important;
+        }
+
+        body.dark-theme .password-strength-wrapper {
+            background-color: #161b22 !important;
+            border-color: #30363d !important;
+        }
+        body.dark-theme .strength-title-text {
+            color: #c9d1d9 !important;
+        }
+        body.dark-theme .strength-meter-segment {
+            background-color: #21262d !important;
+        }
+        body.dark-theme .strength-criterion {
+            color: #8b949e !important;
+        }
+        body.dark-theme .strength-criterion.met {
+            color: #3fb950 !important;
+        }
+        body.dark-theme .strength-hint-text {
+            color: #8b949e !important;
+            border-top-color: #30363d !important;
+        }
+
+        /* --- Onboarding Selection Card Styles --- */
+        .onboarding-option-card {
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 16px;
+            background: #ffffff;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            user-select: none;
+            margin-bottom: 10px;
+        }
+
+        .onboarding-option-card:hover {
+            border-color: #2563eb;
+            background: #f8fafc;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+        }
+
+        .onboarding-option-card.selected {
+            border-color: #2563eb;
+            background: rgba(37, 99, 235, 0.06);
+            box-shadow: 0 0 0 1px #2563eb;
+        }
+
+        .onboarding-option-card .form-check-input {
+            width: 19px;
+            height: 19px;
+            margin: 0;
+            cursor: pointer;
+            accent-color: #2563eb;
+        }
+
+        .onboarding-progress-bar-container {
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .onboarding-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #2563eb, #3b82f6);
+            transition: width 0.35s ease;
+            border-radius: 10px;
+        }
+
+        body.dark-theme .onboarding-option-card {
+            background-color: #0d1117 !important;
+            border-color: #30363d !important;
+            color: #c9d1d9 !important;
+        }
+
+        body.dark-theme .onboarding-option-card:hover {
+            border-color: #58a6ff !important;
+            background-color: #161b22 !important;
+        }
+
+        body.dark-theme .onboarding-option-card.selected {
+            border-color: #58a6ff !important;
+            background-color: rgba(56, 139, 253, 0.15) !important;
+            color: #ffffff !important;
+        }
+
+        body.dark-theme .onboarding-progress-bar-container {
+            background-color: #21262d !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main Container -->
+    <div class="auth-container shadow-lg fade-in-animated">
+        <div class="row g-0 m-0 w-100 h-100">
+            
+            <!-- Left Login Form Panel -->
+            <div class="col-lg-6 form-panel">
+                <!-- Brand logo and name -->
+                <div class="brand-header d-flex justify-content-between align-items-center w-100 mb-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-bar-chart-steps text-primary fs-3"></i>
+                        <span class="brand-name">Vedra BI</span>
+                    </div>
+                    <!-- Security Badge -->
+                    <span class="badge bg-success bg-opacity-10 text-success d-flex align-items-center gap-1 border border-success border-opacity-20 px-2.5 py-1.5" style="font-size: 0.7rem; border-radius: 20px;">
+                        <i class="bi bi-shield-lock-fill"></i> SSL SECURED
+                    </span>
+                </div>
+
+
+
+                <!-- 1. Email Sign-in & Sign-up Form -->
+                <div id="emailFormContainer">
+                    <!-- Auth Mode Tabs (Sign In vs Sign Up) -->
+                    <div class="auth-mode-switcher mb-3 d-flex rounded-3 p-1 bg-light border" id="authModeTabs">
+                        <button type="button" class="btn btn-sm flex-fill fw-bold rounded-2 btn-primary shadow-2xs" id="tabSwitchSignIn" style="transition: all 0.2s;">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
+                        </button>
+                        <button type="button" class="btn btn-sm flex-fill fw-bold rounded-2 btn-light text-muted" id="tabSwitchSignUp" style="transition: all 0.2s;">
+                            <i class="bi bi-person-plus-fill me-1"></i> Sign Up
+                        </button>
+                    </div>
+
+                    <div class="form-header" id="authFormHeader">
+                        <h2 class="form-header-title" id="authHeaderTitle">Sign In to Your Account</h2>
+                        <p class="form-header-subtitle" id="authHeaderSubtitle">Welcome back! Please enter your details</p>
+                    </div>
+
+                    <!-- Input Fields -->
+                    <div class="input-group-custom">
+                        <label for="emailInput" class="form-label-custom">Email Address</label>
+                        <div class="input-wrapper">
+                            <input type="email" class="form-control-custom" id="emailInput" placeholder="Enter your email" autocomplete="email">
+                            <i class="bi bi-envelope input-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="input-group-custom">
+                        <label for="passwordInput" class="form-label-custom">Password</label>
+                        <div class="input-wrapper">
+                            <input type="password" class="form-control-custom" id="passwordInput" placeholder="••••••••" autocomplete="current-password">
+                            <i class="bi bi-lock input-icon"></i>
+                            <button class="password-toggle-btn" id="togglePasswordBtn" type="button" aria-label="Toggle password visibility">
+                                <i class="bi bi-eye-slash" id="togglePasswordIcon"></i>
+                            </button>
+                        </div>
+
+                        <!-- Real-Time Password Strength Meter (Visual Bar & Feedback) -->
+                        <div id="passwordStrengthContainer" class="password-strength-wrapper" style="display: none;">
+                            <div class="strength-header-row">
+                                <span class="strength-title-text">
+                                    <i class="bi bi-shield-lock" id="strengthShieldIcon"></i>
+                                    <span>Password Strength:</span>
+                                </span>
+                                <span id="strengthBadge" class="strength-badge strength-badge-empty">Weak</span>
+                            </div>
+                            
+                            <!-- 4-Segment Visual Progress Bar -->
+                            <div class="strength-meter-bar-track" id="strengthMeterBarTrack">
+                                <div class="strength-meter-segment" id="strengthSeg1"></div>
+                                <div class="strength-meter-segment" id="strengthSeg2"></div>
+                                <div class="strength-meter-segment" id="strengthSeg3"></div>
+                                <div class="strength-meter-segment" id="strengthSeg4"></div>
+                            </div>
+
+                            <!-- Real-Time Criteria Checklist -->
+                            <div class="strength-criteria-grid">
+                                <div class="strength-criterion" id="critLength">
+                                    <i class="bi bi-circle" id="critLengthIcon"></i>
+                                    <span>At least 8 characters (8+ chars)</span>
+                                </div>
+                                <div class="strength-criterion" id="critCase">
+                                    <i class="bi bi-circle" id="critCaseIcon"></i>
+                                    <span>Uppercase & lowercase (A-Z, a-z)</span>
+                                </div>
+                                <div class="strength-criterion" id="critNumber">
+                                    <i class="bi bi-circle" id="critNumberIcon"></i>
+                                    <span>At least 1 number (0-9)</span>
+                                </div>
+                                <div class="strength-criterion" id="critSpecial">
+                                    <i class="bi bi-circle" id="critSpecialIcon"></i>
+                                    <span>Special character (@, $, !, %, *, #, ?)</span>
+                                </div>
+                            </div>
+
+                            <!-- Dynamic Guidance Feedback -->
+                            <div id="strengthHintText" class="strength-hint-text">
+                                <i class="bi bi-info-circle text-primary"></i>
+                                <span>For strong protection, combine at least 8 letters, numbers, and special symbols.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Remember Me & Forgot Password Row (Sign In Mode) -->
+                    <div class="remember-forgot-row" id="rememberForgotRow">
+                        <div class="form-check p-0 m-0 d-flex align-items-center gap-2">
+                            <input class="form-check-input m-0 cursor-pointer" type="checkbox" id="rememberMeInput" style="width: 16px; height: 16px;">
+                            <label class="form-check-label m-0 cursor-pointer" for="rememberMeInput">
+                                Remember for 30 Days
+                            </label>
+                        </div>
+                        <a href="#" id="forgotPasswordLink">Forgot password?</a>
+                    </div>
+
+                    <!-- Mandatory Privacy Policy Checkbox (Sign Up Mode) -->
+                    <div id="registerPrivacyCheckWrapper" class="p-2.5 rounded-3 mb-3" style="display: none; background: rgba(37, 99, 235, 0.05); border: 1px solid rgba(37, 99, 235, 0.2);">
+                        <div class="form-check p-0 m-0 d-flex align-items-start gap-2">
+                            <input class="form-check-input mt-1 cursor-pointer flex-shrink-0" type="checkbox" id="registerPrivacyAgreeInput" style="width: 18px; height: 18px;">
+                            <label class="form-check-label m-0 cursor-pointer small" for="registerPrivacyAgreeInput" style="font-size: 12.5px; line-height: 1.45;">
+                                I have read and agree to the Vedra BI <a href="privacy.html" target="_blank" class="text-primary text-decoration-underline fw-bold" id="privacyPolicyLinkInRegister"><i class="bi bi-shield-check"></i> Hash Privacy Policy</a> and Security Terms. <span class="text-danger fw-bold">*</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Form Validation / Error Display -->
+                    <div id="loginError" class="alert-custom shadow-sm mb-3"></div>
+
+                    <!-- Action Button Grid (Sign In Mode) -->
+                    <div class="actions-grid" id="signInActionsGrid">
+                        <button type="button" class="btn-custom btn-custom-primary" id="loginBtn">
+                            <i class="bi bi-box-arrow-in-right"></i> Sign In
+                        </button>
+                        
+                        <div class="divider">OR</div>
+
+                        <button type="button" class="btn-custom btn-custom-google" id="googleLoginBtn">
+                            <i class="bi bi-google"></i> Sign In with Google
+                        </button>
+
+                        <button type="button" class="btn-custom btn-custom-secondary mt-1" id="instantGuestLoginBtn" style="border: 1.5px dashed #2563eb; color: #2563eb; font-weight: 600;">
+                            <i class="bi bi-lightning-charge-fill text-warning"></i> 1-Click Instant Demo & Dashboard Access
+                        </button>
+                    </div>
+
+                    <!-- Action Button Grid (Sign Up Mode) -->
+                    <div class="actions-grid" id="signUpActionsGrid" style="display: none;">
+                        <button type="button" class="btn-custom btn-custom-primary" id="submitRegisterBtn">
+                            <i class="bi bi-person-plus-fill"></i> Create Account
+                        </button>
+                        
+                        <div class="divider">OR</div>
+
+                        <button type="button" class="btn-custom btn-custom-google" id="googleRegisterBtn">
+                            <i class="bi bi-google"></i> Sign Up with Google
+                        </button>
+                    </div>
+
+                    <!-- Footer Sign up / Sign in Toggle Link -->
+                    <div class="signup-toggle-footer mt-3 text-center" id="authToggleFooter">
+                        <span id="authToggleText">Don't have an account?</span> 
+                        <span id="registerBtn" role="button" class="text-primary fw-bold cursor-pointer text-decoration-underline ms-1">Sign up</span>
+                    </div>
+                </div>
+
+                <!-- 2. Security Setup Container (First time Unique Account ID & 8-Digit Password setup) -->
+                <div id="securitySetupContainer" style="display: none;">
+                    <div class="form-header text-center">
+                        <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-2" style="width: 52px; height: 52px;">
+                            <i class="bi bi-shield-lock-fill fs-3 text-primary"></i>
+                        </div>
+                        <h2 class="form-header-title" style="font-size: 1.4rem;">Security Account Setup (8-Digit Password)</h2>
+                        <p class="form-header-subtitle">Set your unique Account ID and 8-digit security PIN</p>
+                    </div>
+
+                    <div class="p-2.5 mb-3 rounded" style="background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.2); font-size: 12.5px; color: #1e293b;">
+                        <span class="fw-bold text-primary"><i class="bi bi-shield-check me-1"></i> Security Protocol:</span> 
+                        When signing in from a new device or browser, you will be prompted to verify with this 8-digit security password.
+                    </div>
+
+                    <!-- Unique Account ID -->
+                    <div class="input-group-custom">
+                        <label for="setupAccountIdInput" class="form-label-custom">Unique Account ID / Username</label>
+                        <div class="input-wrapper">
+                            <input type="text" class="form-control-custom" id="setupAccountIdInput" placeholder="e.g. @analyst_lead or @user_88">
+                            <i class="bi bi-at input-icon"></i>
+                        </div>
+                        <div id="accountIdCheckFeedback" class="mt-1" style="font-size: 11px;"></div>
+                    </div>
+
+                    <!-- 8-Digit Security Password -->
+                    <div class="input-group-custom">
+                        <label for="setupSecurityPinInput" class="form-label-custom">8-Digit Security Password</label>
+                        <div class="input-wrapper">
+                            <input type="password" class="form-control-custom" id="setupSecurityPinInput" maxlength="8" placeholder="Exact 8 digits">
+                            <i class="bi bi-shield-key input-icon"></i>
+                            <button class="password-toggle-btn" id="toggleSetupPinBtn" type="button" aria-label="Toggle pin visibility">
+                                <i class="bi bi-eye-slash" id="toggleSetupPinIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Confirm 8-Digit Security Password -->
+                    <div class="input-group-custom">
+                        <label for="setupSecurityPinConfirmInput" class="form-label-custom">Confirm 8-Digit Password</label>
+                        <div class="input-wrapper">
+                            <input type="password" class="form-control-custom" id="setupSecurityPinConfirmInput" maxlength="8" placeholder="Re-enter 8 digits">
+                            <i class="bi bi-check2-circle input-icon"></i>
+                        </div>
+                    </div>
+
+                    <!-- Setup Error Display -->
+                    <div id="setupSecurityError" class="alert-custom shadow-sm mb-3" style="display: none;"></div>
+
+                    <div class="actions-grid mt-2">
+                        <button type="button" class="btn-custom btn-custom-primary" id="saveSecuritySetupBtn">
+                            <i class="bi bi-shield-check"></i> Save Security Account & Continue to Dashboard
+                        </button>
+                        <button type="button" class="btn-custom btn-custom-secondary mt-1" id="skipSecuritySetupBtn" style="font-size: 0.85rem;">
+                            <i class="bi bi-arrow-right-circle"></i> Skip for now & Open Dashboard
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. Security Verify Container (Device/Browser 8-Digit Password Verification) -->
+                <div id="securityVerifyContainer" style="display: none;">
+                    <div class="form-header text-center">
+                        <div class="d-inline-flex align-items-center justify-content-center bg-warning bg-opacity-10 text-warning rounded-circle mb-2" style="width: 52px; height: 52px;">
+                            <i class="bi bi-key-fill fs-3 text-warning"></i>
+                        </div>
+                        <h2 class="form-header-title" style="font-size: 1.4rem;">8-Digit Security Verification</h2>
+                        <p class="form-header-subtitle">Security Check: Enter your 8-digit password to authorize this device session</p>
+                    </div>
+
+                    <div class="p-3 mb-3 rounded text-center" style="background: rgba(15, 23, 42, 0.04); border: 1px solid rgba(226, 232, 240, 0.9);">
+                        <div class="text-muted small mb-1" style="font-size: 11px;">Account Identity</div>
+                        <div class="fw-bold fs-6 text-primary" id="verifyAccountEmailDisplay">user@vedrabi.com</div>
+                        <div class="mt-1"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-1 fw-bold fs-6" id="verifyAccountIdDisplay">@user_id</span></div>
+                    </div>
+
+                    <!-- 8-Digit Security Password Entry -->
+                    <div class="input-group-custom">
+                        <label for="verifySecurityPinInput" class="form-label-custom">Enter 8-Digit Security Password</label>
+                        <div class="input-wrapper">
+                            <input type="password" class="form-control-custom" id="verifySecurityPinInput" maxlength="8" placeholder="••••••••" autocomplete="off">
+                            <i class="bi bi-lock-fill input-icon"></i>
+                            <button class="password-toggle-btn" id="toggleVerifyPinBtn" type="button" aria-label="Toggle pin visibility">
+                                <i class="bi bi-eye-slash" id="toggleVerifyPinIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Verify Error Display -->
+                    <div id="verifySecurityError" class="alert-custom shadow-sm mb-3" style="display: none;"></div>
+
+                    <div class="actions-grid mt-2">
+                        <button type="button" class="btn-custom btn-custom-primary" id="verifySecurityPinBtn">
+                            <i class="bi bi-unlock-fill"></i> Verify Password & Enter
+                        </button>
+                        <button type="button" class="btn-custom btn-custom-secondary mt-1" id="skipSecurityVerifyBtn" style="font-size: 0.85rem;">
+                            <i class="bi bi-lightning-charge-fill text-warning"></i> Skip & Enter Dashboard as Guest / Demo
+                        </button>
+                        <button type="button" class="btn-custom btn-custom-secondary mt-1" id="cancelSecurityVerifyBtn">
+                            <i class="bi bi-box-arrow-left"></i> Sign in with another account
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4. Onboarding Container (New User Registration Questions with Language Support) -->
+                <div id="onboardingContainer" style="display: none;">
+                    <div class="form-header text-center mb-3">
+                        <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-2" style="width: 52px; height: 52px;">
+                            <i class="bi bi-rocket-takeoff-fill fs-3 text-primary"></i>
+                        </div>
+                        <h2 class="form-header-title" id="onboardingHeaderTitle" style="font-size: 1.35rem; font-weight: 700;">Welcome to Vedra BI</h2>
+                        <p class="form-header-subtitle" id="onboardingSubtitle" style="font-size: 12.5px; color: #64748b;">Customize your analytics workspace in a few quick steps</p>
+                    </div>
+
+                    <!-- Progress & Completion Tracker Bar -->
+                    <div class="d-flex justify-content-between align-items-center mb-1 text-muted" style="font-size: 11.5px; font-weight: 600;">
+                        <span id="onboardingStepLabel" class="text-primary fw-bold">Step 0 / 6: Language</span>
+                        <span id="onboardingProgressPercent" class="badge bg-primary bg-opacity-10 text-primary">0% Completed (0/6)</span>
+                    </div>
+                    <div class="onboarding-progress-bar-container mb-2">
+                        <div class="onboarding-progress-bar" id="onboardingProgressBar" style="width: 5%;"></div>
+                    </div>
+
+                    <!-- Visual Step Indicators / Dots -->
+                    <div class="d-flex justify-content-between align-items-center mb-3 px-1" id="onboardingStepDots">
+                        <span class="step-dot active" data-step="0" title="Language" style="width: 12%; height: 6px; border-radius: 4px; background: #2563eb; transition: all 0.3s;"></span>
+                        <span class="step-dot" data-step="1" title="Role" style="width: 12%; height: 6px; border-radius: 4px; background: #e2e8f0; transition: all 0.3s;"></span>
+                        <span class="step-dot" data-step="2" title="Goals" style="width: 12%; height: 6px; border-radius: 4px; background: #e2e8f0; transition: all 0.3s;"></span>
+                        <span class="step-dot" data-step="3" title="Data Sources" style="width: 12%; height: 6px; border-radius: 4px; background: #e2e8f0; transition: all 0.3s;"></span>
+                        <span class="step-dot" data-step="4" title="Team Size" style="width: 12%; height: 6px; border-radius: 4px; background: #e2e8f0; transition: all 0.3s;"></span>
+                        <span class="step-dot" data-step="5" title="Frequency" style="width: 12%; height: 6px; border-radius: 4px; background: #e2e8f0; transition: all 0.3s;"></span>
+                        <span class="step-dot" data-step="6" title="Theme" style="width: 12%; height: 6px; border-radius: 4px; background: #e2e8f0; transition: all 0.3s;"></span>
+                    </div>
+
+                    <!-- Step 0: Language Choice -->
+                    <div id="onboardingStep0" class="onboarding-step-panel">
+                        <label class="form-label-custom mb-2.5 fw-bold text-slate-800" style="font-size: 13.5px;" id="lbl_step0_question">
+                            <i class="bi bi-translate text-primary me-1"></i> Choose Your Preferred Language:
+                        </label>
+                        <div class="d-flex flex-column gap-2 mb-3">
+                            <label class="onboarding-option-card selected" for="chk_lang_en">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-primary bg-opacity-10 text-primary fs-5 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                                        🇬🇧
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800">English (Default)</div>
+                                        <div class="text-muted small" style="font-size: 11.5px;">All analytics workspaces, menus, and reports in English</div>
+                                    </div>
+                                </div>
+                                <input type="radio" name="onboarding_lang" class="form-check-input" id="chk_lang_en" value="en" checked>
+                            </label>
+
+                            <label class="onboarding-option-card" for="chk_lang_hi">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-success bg-opacity-10 text-success fs-5 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                                        🇮🇳
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800">Hindi Support (हिंदी)</div>
+                                        <div class="text-muted small" style="font-size: 11.5px;">Optional bilingual contextual support</div>
+                                    </div>
+                                </div>
+                                <input type="radio" name="onboarding_lang" class="form-check-input" id="chk_lang_hi" value="hi">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Step 1: Business Role / User Type -->
+                    <div id="onboardingStep1" class="onboarding-step-panel" style="display: none;">
+                        <label class="form-label-custom mb-2.5 fw-bold text-slate-800" style="font-size: 13.5px;" id="lbl_step1_question">
+                            <i class="bi bi-briefcase-fill text-primary me-1"></i> 1. What is your role or business type?
+                        </label>
+                        <div class="d-flex flex-column gap-1.5 mb-2">
+                            <label class="onboarding-option-card selected" for="chk_role_analyst">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-primary bg-opacity-10 text-primary fs-5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-bar-chart-line-fill"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800 option-title">BI & Data Analyst</div>
+                                        <div class="text-muted small option-sub" style="font-size: 11.5px;">Data visualization, reports & chart creation</div>
+                                    </div>
+                                </div>
+                                <input type="checkbox" class="form-check-input onboarding-chk" id="chk_role_analyst" value="BI Analyst" checked>
+                            </label>
+
+                            <label class="onboarding-option-card" for="chk_role_owner">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-success bg-opacity-10 text-success fs-5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-building-fill"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800 option-title">Business Owner / Founder</div>
+                                        <div class="text-muted small option-sub" style="font-size: 11.5px;">Business growth, revenue & sales oversight</div>
+                                    </div>
+                                </div>
+                                <input type="checkbox" class="form-check-input onboarding-chk" id="chk_role_owner" value="Business Owner">
+                            </label>
+
+                            <label class="onboarding-option-card" for="chk_role_retail">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-warning bg-opacity-10 text-warning fs-5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-shop"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800 option-title">Retail & Sales Manager</div>
+                                        <div class="text-muted small option-sub" style="font-size: 11.5px;">Store inventory, sales tracking & customer trends</div>
+                                    </div>
+                                </div>
+                                <input type="checkbox" class="form-check-input onboarding-chk" id="chk_role_retail" value="Retail & Sales Manager">
+                            </label>
+
+                            <label class="onboarding-option-card" for="chk_role_finance">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-info bg-opacity-10 text-info fs-5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-cash-coin"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800 option-title">Finance & Accounting</div>
+                                        <div class="text-muted small option-sub" style="font-size: 11.5px;">Budgeting, profit/loss & financial reports</div>
+                                    </div>
+                                </div>
+                                <input type="checkbox" class="form-check-input onboarding-chk" id="chk_role_finance" value="Finance & Accounting">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Primary Goals -->
+                    <div id="onboardingStep2" class="onboarding-step-panel" style="display: none;">
+                        <label class="form-label-custom mb-2.5 fw-bold text-slate-800" style="font-size: 13.5px;" id="lbl_step2_question">
+                            <i class="bi bi-bullseye text-primary me-1"></i> 2. What are your primary goals with Vedra BI?
+                        </label>
+                        <div class="d-flex flex-column gap-1.5 mb-2">
+                            <label class="onboarding-option-card selected" for="chk_goal_charts">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-primary bg-opacity-10 text-primary fs-5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-graph-up-arrow"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800 option-title">Interactive Visual Dashboards</div>
+                                        <div class="text-muted small option-sub" style="font-size: 11.5px;">Transform raw Excel/CSV data into interactive charts</div>
+                                    </div>
+                                </div>
+                                <input type="checkbox" class="form-check-input onboarding-chk" id="chk_goal_charts" value="Interactive Visual Dashboards" checked>
+                            </label>
+
+                            <label class="onboarding-option-card selected" for="chk_goal_ai">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-purple bg-opacity-10 text-purple fs-5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-robot"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800 option-title">AI Business Advisor & Q&A</div>
+                                        <div class="text-muted small option-sub" style="font-size: 11.5px;">Ask natural language questions & get instant insights</div>
+                                    </div>
+                                </div>
+                                <input type="checkbox" class="form-check-input onboarding-chk" id="chk_goal_ai" value="AI Data Advisor" checked>
+                            </label>
+
+                            <label class="onboarding-option-card" for="chk_goal_export">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-success bg-opacity-10 text-success fs-5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-file-earmark-pdf-fill"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800 option-title">Automated PDF & Excel Exporting</div>
+                                        <div class="text-muted small option-sub" style="font-size: 11.5px;">Export formatted reports for team sharing</div>
+                                    </div>
+                                </div>
+                                <input type="checkbox" class="form-check-input onboarding-chk" id="chk_goal_export" value="PDF & Excel Export">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Preferred Data Sources -->
+                    <div id="onboardingStep3" class="onboarding-step-panel" style="display: none;">
+                        <label class="form-label-custom mb-2.5 fw-bold text-slate-800" style="font-size: 13.5px;" id="lbl_step3_question">
+                            <i class="bi bi-database-fill text-primary me-1"></i> 3. Which data sources will you connect?
+                        </label>
+                        <div class="d-flex flex-column gap-1.5 mb-2">
+                            <label class="onboarding-option-card selected" for="chk_ds_excel">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-success bg-opacity-10 text-success fs-5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-file-earmark-excel-fill"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800 option-title">Excel (.xlsx) & CSV Files</div>
+                                        <div class="text-muted small option-sub" style="font-size: 11.5px;">Spreadsheet uploads and local data files</div>
+                                    </div>
+                                </div>
+                                <input type="checkbox" class="form-check-input onboarding-chk" id="chk_ds_excel" value="Excel / CSV" checked>
+                            </label>
+
+                            <label class="onboarding-option-card" for="chk_ds_sql">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-info bg-opacity-10 text-info fs-5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-database-check"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800 option-title">SQL Databases (MySQL, PostgreSQL, Cloud SQL)</div>
+                                        <div class="text-muted small option-sub" style="font-size: 11.5px;">Direct relational database connections</div>
+                                    </div>
+                                </div>
+                                <input type="checkbox" class="form-check-input onboarding-chk" id="chk_ds_sql" value="SQL Database">
+                            </label>
+
+                            <label class="onboarding-option-card" for="chk_ds_sheets">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-warning bg-opacity-10 text-warning fs-5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-file-spreadsheet-fill"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800 option-title">Google Sheets & Cloud Drives</div>
+                                        <div class="text-muted small option-sub" style="font-size: 11.5px;">Cloud spreadsheets and online storage sync</div>
+                                    </div>
+                                </div>
+                                <input type="checkbox" class="form-check-input onboarding-chk" id="chk_ds_sheets" value="Google Sheets">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Organization / Team Size -->
+                    <div id="onboardingStep4" class="onboarding-step-panel" style="display: none;">
+                        <label class="form-label-custom mb-2.5 fw-bold text-slate-800" style="font-size: 13.5px;" id="lbl_step4_question">
+                            <i class="bi bi-people-fill text-primary me-1"></i> 4. What is your team or organization size?
+                        </label>
+                        <div class="d-flex flex-column gap-2 mb-2">
+                            <label class="onboarding-option-card" for="rad_team_solo">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-primary bg-opacity-10 text-primary fs-5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-person-badge"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800 option-title">Solo Professional (1 User)</div>
+                                        <div class="text-muted small option-sub" style="font-size: 11.5px;">Individual analyst or freelancer</div>
+                                    </div>
+                                </div>
+                                <input type="radio" name="onboarding_teamsize" class="form-check-input" id="rad_team_solo" value="Solo (1 User)">
+                            </label>
+
+                            <label class="onboarding-option-card selected" for="rad_team_small">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-success bg-opacity-10 text-success fs-5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-people-fill"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800 option-title">Small Team (2 - 10 Members)</div>
+                                        <div class="text-muted small option-sub" style="font-size: 11.5px;">Small business or department</div>
+                                    </div>
+                                </div>
+                                <input type="radio" name="onboarding_teamsize" class="form-check-input" id="rad_team_small" value="Small Team (2-10)" checked>
+                            </label>
+
+                            <label class="onboarding-option-card" for="rad_team_mid">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-warning bg-opacity-10 text-warning fs-5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-diagram-3-fill"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800 option-title">Growing Business (11 - 50 Members)</div>
+                                        <div class="text-muted small option-sub" style="font-size: 11.5px;">Multi-department organization</div>
+                                    </div>
+                                </div>
+                                <input type="radio" name="onboarding_teamsize" class="form-check-input" id="rad_team_mid" value="Mid Business (11-50)">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Step 5: Update & Refresh Frequency -->
+                    <div id="onboardingStep5" class="onboarding-step-panel" style="display: none;">
+                        <label class="form-label-custom mb-2.5 fw-bold text-slate-800" style="font-size: 13.5px;" id="lbl_step5_question">
+                            <i class="bi bi-arrow-repeat text-primary me-1"></i> 5. How frequently will your data be updated?
+                        </label>
+                        <div class="d-flex flex-column gap-2 mb-2">
+                            <label class="onboarding-option-card" for="rad_freq_realtime">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-danger bg-opacity-10 text-danger fs-5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-lightning-charge-fill"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800 option-title">Real-Time Continuous Stream</div>
+                                        <div class="text-muted small option-sub" style="font-size: 11.5px;">Instant updates whenever new data arrives</div>
+                                    </div>
+                                </div>
+                                <input type="radio" name="onboarding_freq" class="form-check-input" id="rad_freq_realtime" value="Real-Time">
+                            </label>
+
+                            <label class="onboarding-option-card selected" for="rad_freq_daily">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-primary bg-opacity-10 text-primary fs-5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-calendar-check-fill"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800 option-title">Daily Automated Refresh</div>
+                                        <div class="text-muted small option-sub" style="font-size: 11.5px;">Once or multiple times a day</div>
+                                    </div>
+                                </div>
+                                <input type="radio" name="onboarding_freq" class="form-check-input" id="rad_freq_daily" value="Daily Refresh" checked>
+                            </label>
+
+                            <label class="onboarding-option-card" for="rad_freq_manual">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-secondary bg-opacity-10 text-secondary fs-5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-hand-index-thumb-fill"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800 option-title">Manual / On-Demand Refresh</div>
+                                        <div class="text-muted small option-sub" style="font-size: 11.5px;">Whenever you upload a new file</div>
+                                    </div>
+                                </div>
+                                <input type="radio" name="onboarding_freq" class="form-check-input" id="rad_freq_manual" value="Manual On-Demand">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Step 6: Preferred Theme -->
+                    <div id="onboardingStep6" class="onboarding-step-panel" style="display: none;">
+                        <label class="form-label-custom mb-2.5 fw-bold text-slate-800" style="font-size: 13.5px;" id="lbl_step6_question">
+                            <i class="bi bi-palette-fill text-primary me-1"></i> 6. Select your preferred dashboard theme:
+                        </label>
+                        <div class="d-flex flex-column gap-2 mb-3">
+                            <label class="onboarding-option-card selected" for="chk_theme_light">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-warning bg-opacity-10 text-warning fs-5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-sun-fill"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800 option-title">☀️ Silk Light Mode</div>
+                                        <div class="text-muted small option-sub" style="font-size: 11.5px;">High clarity professional layout (Recommended)</div>
+                                    </div>
+                                </div>
+                                <input type="radio" name="onboarding_theme_choice" class="form-check-input" id="chk_theme_light" value="silk_light" checked>
+                            </label>
+
+                            <label class="onboarding-option-card" for="chk_theme_dark">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="p-2 rounded bg-dark text-light fs-5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-moon-stars-fill"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold fs-6 text-slate-800 option-title">🌙 Dark Luxury Mode</div>
+                                        <div class="text-muted small option-sub" style="font-size: 11.5px;">High contrast night vision layout</div>
+                                    </div>
+                                </div>
+                                <input type="radio" name="onboarding_theme_choice" class="form-check-input" id="chk_theme_dark" value="dark">
+                            </label>
+                        </div>
+
+                        <!-- Sample Data Auto-Load Option -->
+                        <div class="p-3 rounded-3 border mb-3" style="background: rgba(37, 99, 235, 0.04); border-color: rgba(37, 99, 235, 0.2) !important;">
+                            <div class="form-check form-switch d-flex align-items-center justify-content-between p-0 m-0">
+                                <label class="form-check-label cursor-pointer d-flex align-items-center gap-2.5 mb-0" for="chk_auto_sample_data">
+                                    <div class="p-2 rounded bg-primary bg-opacity-10 text-primary fs-5 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-database-fill-check"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-slate-800 option-title-sample" style="font-size: 13px;" id="lbl_sample_data_title">🚀 Auto-Load Sample BI Dataset (Quick Start)</div>
+                                        <div class="text-muted small option-sub-sample" style="font-size: 11.5px;" id="lbl_sample_data_sub">Instantly explore the dashboard with pre-configured analytics without uploading a file</div>
+                                    </div>
+                                </label>
+                                <input class="form-check-input ms-2" type="checkbox" id="chk_auto_sample_data" style="width: 2.2em; height: 1.2em; cursor: pointer;" checked>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Action Buttons -->
+                    <div class="d-flex justify-content-between align-items-center mt-3 gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary px-3 py-2" id="onboardingBackBtn" style="border-radius: 10px; display: none;">
+                            <i class="bi bi-arrow-left me-1"></i> Back
+                        </button>
+                        <button type="button" class="btn btn-sm btn-link text-muted p-0 border-0 ms-auto text-decoration-none" id="onboardingSkipBtn" style="font-size: 12px;">
+                            Skip for now
+                        </button>
+                        <button type="button" class="btn-custom btn-custom-primary" id="onboardingNextBtn" style="max-width: 220px;">
+                            Next Question <i class="bi bi-arrow-right ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+
+
+                <!-- 3. Forgot Password Form (Hidden by default) -->
+                <div id="forgotPasswordContainer" style="display: none;">
+                    <div class="form-header">
+                        <h2 class="form-header-title">Forgot Password?</h2>
+                        <p class="form-header-subtitle">Enter your registered email and we will send you a password recovery link.</p>
+                    </div>
+
+                    <!-- Reset Email input -->
+                    <div class="input-group-custom">
+                        <label for="resetEmailInput" class="form-label-custom">Registered Email Address</label>
+                        <div class="input-wrapper">
+                            <input type="email" class="form-control-custom" id="resetEmailInput" placeholder="Enter your registered email">
+                            <i class="bi bi-envelope-open input-icon"></i>
+                        </div>
+                    </div>
+
+                    <!-- Reset Success Alert -->
+                    <div id="resetSuccessAlert" class="alert alert-success d-none mb-3" style="font-size: 13px; border-radius: 10px;">
+                        <i class="bi bi-check-circle-fill me-1"></i> Password reset link has been successfully sent to your email.
+                    </div>
+
+                    <!-- Reset Error Display -->
+                    <div id="resetError" class="alert-custom shadow-sm mb-3"></div>
+
+                    <div class="actions-grid">
+                        <button type="button" class="btn-custom btn-custom-primary" id="sendResetBtn">
+                            <i class="bi bi-send-fill"></i> Send Reset Email
+                        </button>
+                        <button type="button" class="btn-custom btn-custom-secondary" id="backToLoginBtn">
+                            <i class="bi bi-arrow-left"></i> Back to Sign In
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Branding & Showcase Panel (Vibrant Blue layout) -->
+            <div class="col-lg-6 branding-panel">
+                <!-- Top Brand Text -->
+                <div class="brand-header border-0 m-0 p-0 text-white opacity-75">
+                    <i class="bi bi-shield-check-fill text-white fs-4"></i>
+                    <span class="text-white fw-bold small">Enterprise Secured BI Platform</span>
+                </div>
+
+                <!-- Central content/highlights -->
+                <div class="branding-content text-start">
+                    <h1 class="branding-title">Welcome back!<br>Please sign in to your Vedra BI account</h1>
+                    <p class="branding-desc">Transform your business data into actionable insights with high-performance charts, interactive pivot tables, and instant AI analytics advisor.</p>
+                    
+                    <!-- Advanced simulated interactive viewport matching mockup -->
+                    <div class="mock-dashboard text-dark">
+                        <!-- Header elements -->
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="m-0 fw-bold text-slate-800" style="font-size: 0.9rem; font-family: var(--font-display);">Sales Report</h6>
+                            </div>
+                            <div class="d-flex align-items-center gap-2" style="font-size: 0.72rem; color: #64748b;">
+                                <span class="d-flex align-items-center gap-1">
+                                    <span class="rounded-circle" style="width: 7px; height: 7px; background: #2563eb; display: inline-block;"></span> Profit
+                                </span>
+                                <span class="d-flex align-items-center gap-1">
+                                    <span class="rounded-circle" style="width: 7px; height: 7px; background: #e2e8f0; display: inline-block;"></span> Expenses
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Bar chart columns representing Jan - Oct -->
+                        <div class="d-flex justify-content-between align-items-end position-relative" style="height: 120px; padding-top: 15px;">
+                            
+                            <!-- Custom tooltip on active Oct column matching image -->
+                            <div class="custom-tooltip" style="bottom: 85px; right: 5px; min-width: 85px; text-align: left;">
+                                <div class="d-flex align-items-center gap-1"><span class="rounded-circle" style="width: 5px; height: 5px; background: #60a5fa; display: inline-block;"></span> Profit: <strong style="color: #60a5fa;">$49,597</strong></div>
+                                <div class="d-flex align-items-center gap-1"><span class="rounded-circle" style="width: 5px; height: 5px; background: #94a3b8; display: inline-block;"></span> Exp: <strong style="color: #94a3b8;">$38,265</strong></div>
+                                <div class="tooltip-arrow"></div>
+                            </div>
+
+                            <!-- Bar columns loop (pure HTML layout) -->
+                            <div class="bar-column d-flex flex-column align-items-center gap-1 flex-fill">
+                                <div class="bar-track w-50" style="height: 75px;">
+                                    <div class="bar-fill" style="height: 40%;"></div>
+                                </div>
+                                <span class="text-muted" style="font-size: 0.6rem;">Jan</span>
+                            </div>
+                            <div class="bar-column d-flex flex-column align-items-center gap-1 flex-fill">
+                                <div class="bar-track w-50" style="height: 75px;">
+                                    <div class="bar-fill" style="height: 30%;"></div>
+                                </div>
+                                <span class="text-muted" style="font-size: 0.6rem;">Feb</span>
+                            </div>
+                            <div class="bar-column d-flex flex-column align-items-center gap-1 flex-fill">
+                                <div class="bar-track w-50" style="height: 75px;">
+                                    <div class="bar-fill" style="height: 55%;"></div>
+                                </div>
+                                <span class="text-muted" style="font-size: 0.6rem;">Mar</span>
+                            </div>
+                            <div class="bar-column d-flex flex-column align-items-center gap-1 flex-fill">
+                                <div class="bar-track w-50" style="height: 75px;">
+                                    <div class="bar-fill" style="height: 25%;"></div>
+                                </div>
+                                <span class="text-muted" style="font-size: 0.6rem;">Apr</span>
+                            </div>
+                            <div class="bar-column d-flex flex-column align-items-center gap-1 flex-fill">
+                                <div class="bar-track w-50" style="height: 75px;">
+                                    <div class="bar-fill" style="height: 48%;"></div>
+                                </div>
+                                <span class="text-muted" style="font-size: 0.6rem;">May</span>
+                            </div>
+                            <div class="bar-column d-flex flex-column align-items-center gap-1 flex-fill">
+                                <div class="bar-track w-50" style="height: 75px;">
+                                    <div class="bar-fill" style="height: 38%;"></div>
+                                </div>
+                                <span class="text-muted" style="font-size: 0.6rem;">Jun</span>
+                            </div>
+                            <div class="bar-column d-flex flex-column align-items-center gap-1 flex-fill">
+                                <div class="bar-track w-50" style="height: 75px;">
+                                    <div class="bar-fill" style="height: 70%;"></div>
+                                </div>
+                                <span class="text-muted" style="font-size: 0.6rem;">Jul</span>
+                            </div>
+                            <div class="bar-column d-flex flex-column align-items-center gap-1 flex-fill">
+                                <div class="bar-track w-50" style="height: 75px;">
+                                    <div class="bar-fill" style="height: 50%;"></div>
+                                </div>
+                                <span class="text-muted" style="font-size: 0.6rem;">Aug</span>
+                            </div>
+                            <div class="bar-column d-flex flex-column align-items-center gap-1 flex-fill">
+                                <div class="bar-track w-50" style="height: 75px;">
+                                    <div class="bar-fill" style="height: 45%;"></div>
+                                </div>
+                                <span class="text-muted" style="font-size: 0.6rem;">Sep</span>
+                            </div>
+                            <div class="bar-column d-flex flex-column align-items-center gap-1 flex-fill">
+                                <div class="bar-track w-50 bg-slate-200" style="height: 75px; box-shadow: 0 0 6px rgba(37,99,235,0.15);">
+                                    <div class="bar-fill" style="height: 80%;"></div>
+                                </div>
+                                <span class="fw-bold text-primary" style="font-size: 0.6rem;">Oct</span>
+                            </div>
+                        </div>
+
+                        <!-- Floating donut component overlapping beautifully as requested -->
+                        <div class="donut-card text-dark text-start">
+                            <h6 class="m-0 text-slate-800 fw-bold mb-1" style="font-size: 0.62rem; font-family: var(--font-display);">Total Categories</h6>
+                            <div class="position-relative d-flex justify-content-center align-items-center my-1" style="height: 46px;">
+                                <svg width="40" height="40" viewBox="0 0 36 36" class="donut-svg">
+                                    <circle cx="18" cy="18" r="15.915" fill="none" stroke="#e2e8f0" stroke-width="4.5"></circle>
+                                    <circle cx="18" cy="18" r="15.915" fill="none" stroke="#2563eb" stroke-width="4.5" stroke-dasharray="65 35" stroke-dashoffset="25"></circle>
+                                    <circle cx="18" cy="18" r="15.915" fill="none" stroke="#60a5fa" stroke-width="4.5" stroke-dasharray="15 85" stroke-dashoffset="90"></circle>
+                                </svg>
+                                <div class="position-absolute text-center" style="font-size: 0.65rem; font-weight: 800; color: #1e293b;">
+                                    248%
+                                </div>
+                            </div>
+                            <div class="d-flex flex-column gap-1 text-muted" style="font-size: 0.52rem; line-height: 1;">
+                                <span class="d-flex align-items-center gap-1"><span class="rounded-circle bg-primary" style="width: 5px; height: 5px; display:inline-block;"></span> Mobile</span>
+                                <span class="d-flex align-items-center gap-1"><span class="rounded-circle bg-info" style="width: 5px; height: 5px; display:inline-block;"></span> Laptop</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Dots & copyright -->
+                <div class="d-flex justify-content-between align-items-center pt-3 border-top border-white border-opacity-10">
+                    <div class="dots-indicator">
+                        <div class="dot"></div>
+                        <div class="dot active"></div>
+                        <div class="dot"></div>
+                    </div>
+                    <span class="small text-white text-opacity-50" style="font-size: 11px;">Vedra BI &copy; 2026</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Firebase v8 SDK loaders -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <!-- Custom inline interactions (e.g. password toggling) -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+            const passwordInput = document.getElementById('passwordInput');
+            const togglePasswordIcon = document.getElementById('togglePasswordIcon');
+
+            if (togglePasswordBtn && passwordInput && togglePasswordIcon) {
+                togglePasswordBtn.addEventListener('click', () => {
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+                    
+                    // Toggle icons
+                    if (type === 'text') {
+                        togglePasswordIcon.classList.remove('bi-eye-slash');
+                        togglePasswordIcon.classList.add('bi-eye');
+                        togglePasswordBtn.style.color = "var(--primary)";
+                    } else {
+                        togglePasswordIcon.classList.remove('bi-eye');
+                        togglePasswordIcon.classList.add('bi-eye-slash');
+                        togglePasswordBtn.style.color = "#64748b";
+                    }
+                });
+            }
+        });
+    </script>
+    <script type="module" src="src/js/main.ts"></script>
+</body>
+</html>

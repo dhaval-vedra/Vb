@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vedra BI - Privacy Policy & Data Governance</title>
+    
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS & Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        :root {
+            --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --bg-body: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --emerald: #059669;
+            --amber: #d97706;
+            --purple: #7c3aed;
+        }
+
+        .dark-theme {
+            --bg-body: #0b0f19;
+            --card-bg: #111827;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #1f2937;
+            --primary: #3b82f6;
+            --primary-hover: #60a5fa;
+            --emerald: #10b981;
+            --amber: #f59e0b;
+            --purple: #a855f7;
+        }
+
+        body {
+            font-family: var(--font-display);
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            transition: background-color 0.25s ease, color 0.25s ease;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.7;
+        }
+
+        .font-mono {
+            font-family: var(--font-mono);
+        }
+
+        /* Glassmorphism Header */
+        .glass-header {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+        }
+        .dark-theme .glass-header {
+            background: rgba(17, 24, 39, 0.92);
+        }
+
+        .policy-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            box-shadow: 0 2px 12px -2px rgba(0, 0, 0, 0.04);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .code-pill {
+            font-family: var(--font-mono);
+            background: rgba(37, 99, 235, 0.08);
+            color: var(--primary);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            border: 1px solid rgba(37, 99, 235, 0.15);
+        }
+
+        .step-circle {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .toc-link {
+            display: block;
+            padding: 8px 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            transition: all 0.15s ease;
+        }
+        .toc-link:hover, .toc-link.active {
+            background: rgba(37, 99, 235, 0.08);
+            color: var(--primary);
+            font-weight: 600;
+            padding-left: 14px;
+        }
+
+        .badge-verified {
+            background: rgba(5, 150, 105, 0.1);
+            color: var(--emerald);
+            border: 1px solid rgba(5, 150, 105, 0.25);
+            font-weight: 600;
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .callout-box {
+            border-left: 4px solid var(--primary);
+            background: rgba(37, 99, 235, 0.04);
+            border-radius: 0 10px 10px 0;
+            padding: 16px 20px;
+        }
+        .dark-theme .callout-box {
+            background: rgba(59, 130, 246, 0.08);
+        }
+
+        .callout-success {
+            border-left-color: var(--emerald);
+            background: rgba(5, 150, 105, 0.04);
+        }
+        .dark-theme .callout-success {
+            background: rgba(16, 185, 129, 0.08);
+        }
+
+        .callout-amber {
+            border-left-color: var(--amber);
+            background: rgba(217, 119, 6, 0.04);
+        }
+        .dark-theme .callout-amber {
+            background: rgba(245, 158, 11, 0.08);
+        }
+
+        @media print {
+            .glass-header, aside, footer, .btn, #btnThemeToggle {
+                display: none !important;
+            }
+            .policy-card {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+            }
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- STICKY TOP NAVBAR -->
+    <header class="glass-header py-3" id="mainHeader">
+        <div class="container d-flex align-items-center justify-content-between">
+            <a href="index.html" class="d-flex align-items-center gap-2.5 text-decoration-none text-reset" id="brandLink">
+                <div class="p-2 rounded-3 bg-primary text-white d-flex align-items-center justify-content-center shadow-sm" style="width: 36px; height: 36px;">
+                    <i class="bi bi-bar-chart-fill fs-5"></i>
+                </div>
+                <div>
+                    <span class="fw-bold fs-5 tracking-tight">Vedra BI</span>
+                    <span class="badge badge-verified ms-2 d-none d-sm-inline-block">Enterprise Data Trust</span>
+                </div>
+            </a>
+
+            <div class="d-flex align-items-center gap-2">
+                <button id="btnThemeToggle" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3">
+                    <i class="bi bi-moon-stars-fill" id="themeToggleIcon"></i>
+                    <span id="themeToggleText" class="d-none d-sm-inline">Dark Mode</span>
+                </button>
+                <button onclick="window.print()" class="btn btn-outline-secondary btn-sm d-none d-md-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3" title="Print or Save as PDF">
+                    <i class="bi bi-printer"></i>
+                    <span>Print / PDF</span>
+                </button>
+                <a href="profile.html" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3">
+                    <i class="bi bi-person-circle"></i>
+                    <span class="d-none d-sm-inline">Profile Hub</span>
+                </a>
+                <a href="index.html" class="btn btn-primary btn-sm d-flex align-items-center gap-1.5 px-3.5 py-1.5 rounded-3">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- EXECUTIVE BANNER -->
+    <section class="py-5 border-bottom bg-body position-relative">
+        <div class="container py-2">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-8">
+                    <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-primary bg-opacity-10 text-primary fw-semibold small mb-3 border border-primary border-opacity-20">
+                        <i class="bi bi-shield-check"></i> Enterprise Data Governance & Privacy Charter
+                    </div>
+                    <h1 class="display-6 fw-extrabold mb-3" style="letter-spacing: -0.5px;">
+                        Vedra BI Privacy Policy
+                    </h1>
+                    <p class="lead text-muted fs-6 mb-4" style="max-width: 740px;">
+                        This document details how <strong>Vedra BI Analytics</strong> collects, processes, protects, and governs user accounts, business datasets, analytical queries, and workspace configurations. We enforce strict data ownership guarantees, local-first in-memory processing, and zero third-party data monetization.
+                    </p>
+                    <div class="d-flex flex-wrap gap-2.5 align-items-center text-muted small">
+                        <span class="d-flex align-items-center gap-1">
+                            <i class="bi bi-calendar-check text-primary"></i> <strong>Effective Date:</strong> January 1, 2026
+                        </span>
+                        <span class="mx-1 d-none d-sm-inline">•</span>
+                        <span class="d-flex align-items-center gap-1">
+                            <i class="bi bi-arrow-repeat text-success"></i> <strong>Last Updated:</strong> February 2026
+                        </span>
+                        <span class="mx-1 d-none d-sm-inline">•</span>
+                        <span class="d-flex align-items-center gap-1">
+                            <i class="bi bi-file-earmark-lock text-info"></i> <strong>Version:</strong> 4.5 Enterprise
+                        </span>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="policy-card p-3.5 p-md-4">
+                        <div class="small text-muted fw-bold mb-2.5 text-uppercase">Privacy & Trust Commitments</div>
+                        <div class="d-flex flex-column gap-2 text-sm">
+                            <div class="d-flex align-items-center justify-content-between py-1 border-bottom">
+                                <span class="text-muted">Customer Data Ownership</span>
+                                <strong class="text-success"><i class="bi bi-check-circle-fill me-1"></i> 100% You Own It</strong>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between py-1 border-bottom">
+                                <span class="text-muted">Data Selling / Brokerage</span>
+                                <strong class="text-danger"><i class="bi bi-x-circle-fill me-1"></i> Strictly Never</strong>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between py-1 border-bottom">
+                                <span class="text-muted">AI Model Training</span>
+                                <strong class="text-danger"><i class="bi bi-shield-x me-1"></i> Zero AI Training</strong>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between py-1 border-bottom">
+                                <span class="text-muted">Computation Architecture</span>
+                                <strong class="text-primary font-mono">Client In-Memory</strong>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between py-1">
+                                <span class="text-muted">Regulatory Compliance</span>
+                                <strong class="text-primary">GDPR & CCPA Ready</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MAIN POLICY CONTENT + TABLE OF CONTENTS -->
+    <main class="container my-5 flex-grow-1">
+        <div class="row g-4">
+            
+            <!-- STICKY TABLE OF CONTENTS (Desktop) -->
+            <aside class="col-lg-3 d-none d-lg-block">
+                <div class="sticky-top" style="top: 85px;">
+                    <div class="policy-card p-3 mb-3">
+                        <div class="fw-bold small text-muted text-uppercase mb-2.5 px-2">Table of Contents</div>
+                        <nav class="d-flex flex-column gap-1" id="policyTocNav">
+                            <a href="#sec-intro" class="toc-link active"><i class="bi bi-info-circle me-1.5"></i> 1. Introduction & Scope</a>
+                            <a href="#sec-data-collection" class="toc-link"><i class="bi bi-database-check me-1.5"></i> 2. Information We Collect</a>
+                            <a href="#sec-data-usage" class="toc-link"><i class="bi bi-gear-wide-connected me-1.5"></i> 3. How We Process Data</a>
+                            <a href="#sec-data-ownership" class="toc-link"><i class="bi bi-award me-1.5"></i> 4. Data Ownership & Rights</a>
+                            <a href="#sec-security" class="toc-link"><i class="bi bi-shield-lock me-1.5"></i> 5. Security & Safeguards</a>
+                            <a href="#sec-ai-governance" class="toc-link"><i class="bi bi-robot me-1.5"></i> 6. AI Analytics Governance</a>
+                            <a href="#sec-subprocessors" class="toc-link"><i class="bi bi-diagram-3 me-1.5"></i> 7. Third-Party Services</a>
+                            <a href="#sec-data-retention" class="toc-link"><i class="bi bi-clock-history me-1.5"></i> 8. Retention & Erasure</a>
+                            <a href="#sec-cookies" class="toc-link"><i class="bi bi-cookie me-1.5"></i> 9. Cookies & Storage</a>
+                            <a href="#sec-compliance" class="toc-link"><i class="bi bi-globe me-1.5"></i> 10. Global Regulations</a>
+                            <a href="#sec-contact" class="toc-link"><i class="bi bi-envelope-at me-1.5"></i> 11. Contact & DPO</a>
+                        </nav>
+                    </div>
+
+                    <div class="policy-card p-3 text-center bg-primary bg-opacity-5 border-primary border-opacity-25">
+                        <i class="bi bi-person-gear fs-3 text-primary mb-2 d-block"></i>
+                        <h6 class="fw-bold mb-1">Manage Your Privacy</h6>
+                        <p class="small text-muted mb-3">Export your data, inspect telemetry settings, or manage active sessions directly from your Profile Hub.</p>
+                        <a href="profile.html#tab-settings" class="btn btn-outline-primary btn-sm w-100 fw-semibold rounded-3">
+                            <i class="bi bi-sliders me-1"></i> Privacy & Workspace Settings
+                        </a>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- MAIN ARTICLES -->
+            <div class="col-lg-9 d-flex flex-column gap-4">
+
+                <!-- 1. INTRODUCTION & SCOPE -->
+                <article id="sec-intro" class="policy-card p-4 p-md-5">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="step-circle bg-primary text-white">1</div>
+                        <h3 class="fw-bold mb-0">Introduction & Scope</h3>
+                    </div>
+                    <p>
+                        Welcome to <strong>Vedra BI</strong> ("we," "us," "our," or "the Platform"). Vedra BI is a next-generation Business Intelligence, Visual Analytics, and KPI Reporting platform designed for data analysts, finance teams, operations leads, and corporate decision-makers.
+                    </p>
+                    <p>
+                        This Privacy Policy outlines our uncompromising dedication to privacy, customer sovereignty, transparency, and data governance. It applies to all interactions with the Vedra BI web application, connected API endpoints, embedded chart viewers, documentation portals, and customer account services.
+                    </p>
+                    <div class="callout-box">
+                        <strong class="text-primary d-block mb-1"><i class="bi bi-shield-check me-1"></i> Core Operational Philosophy:</strong>
+                        <span class="text-muted small">
+                            We treat customer data as an absolute trust. Our software is architected so that analytical calculations, dataset filters, and visual rendering execute within your sandboxed browser environment whenever possible, minimizing server-side data persistence.
+                        </span>
+                    </div>
+                </article>
+
+                <!-- 2. INFORMATION WE COLLECT -->
+                <article id="sec-data-collection" class="policy-card p-4 p-md-5">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="step-circle bg-success text-white">2</div>
+                        <h3 class="fw-bold mb-0">Information We Collect</h3>
+                    </div>
+                    <p class="text-muted">
+                        We collect only the minimum amount of information required to deliver high-performance business intelligence services. Information falls into the following transparent categories:
+                    </p>
+
+                    <div class="table-responsive my-3">
+                        <table class="table table-bordered align-middle small mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 25%;">Category</th>
+                                    <th style="width: 45%;">Data Elements Collected</th>
+                                    <th style="width: 30%;">Purpose & Legal Basis</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Account & Identity</strong></td>
+                                    <td>Name, work email address, company/workspace identifier, profile avatar initials, and workspace role preferences.</td>
+                                    <td>User authentication, workspace access control, collaborative sharing, and account communication.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Customer Datasets & Files</strong></td>
+                                    <td>Structured data files uploaded by you (CSV, Excel / XLSX, JSON payloads, or connected Google Sheets API references).</td>
+                                    <td>Executing SQL aggregations, rendering charts, computing pivot metrics, and generating reports.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Security & Auth Tokens</strong></td>
+                                    <td>Cryptographic session identifiers, client-salted SHA-256 password/PIN digests, and multi-factor authorization timestamps.</td>
+                                    <td>Zero-knowledge credential verification and unauthorized session prevention.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Telemetry & System Health</strong></td>
+                                    <td>Client browser type, screen resolution, query execution times, error stack traces, and feature usage counters.</td>
+                                    <td>Performance optimization, diagnostic debugging, and preventing Denial-of-Service attacks.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="callout-box callout-amber mt-3">
+                        <strong class="text-dark d-block mb-1"><i class="bi bi-exclamation-triangle-fill text-warning me-1"></i> Data We NEVER Collect:</strong>
+                        <ul class="mb-0 small text-muted ps-3">
+                            <li>We never collect sensitive personal records (e.g., government IDs, social security numbers, biometric records).</li>
+                            <li>We never read or inspect unrelated files on your local file system.</li>
+                            <li>We never log or transmit your raw, unencrypted passwords or security PINs.</li>
+                        </ul>
+                    </div>
+                </article>
+
+                <!-- 3. HOW WE PROCESS AND UTILIZE YOUR DATA -->
+                <article id="sec-data-usage" class="policy-card p-4 p-md-5">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="step-circle bg-primary text-white">3</div>
+                        <h3 class="fw-bold mb-0">How We Process & Utilize Data</h3>
+                    </div>
+                    <p>
+                        Vedra BI uses collected information strictly for operational and analytical purposes outlined below:
+                    </p>
+
+                    <div class="row g-3 my-2">
+                        <div class="col-md-6">
+                            <div class="p-3.5 rounded-3 border bg-body h-100">
+                                <h6 class="fw-bold text-primary mb-1.5"><i class="bi bi-cpu-fill me-1.5"></i> In-Memory Analytics Engine</h6>
+                                <p class="small text-muted mb-0">
+                                    Our analytics pipeline executes via WebAssembly (DuckDB-WASM) and client-side memory. Your dataset rows are parsed in your browser context, delivering ultra-fast query speeds without storing raw data records on central servers.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3.5 rounded-3 border bg-body h-100">
+                                <h6 class="fw-bold text-success mb-1.5"><i class="bi bi-pie-chart-fill me-1.5"></i> Chart & KPI Visualization</h6>
+                                <p class="small text-muted mb-0">
+                                    Transforming structured metrics into bar charts, line graphs, geo heatmaps, scatter plots, and pivot tables based solely on your configured dimensions and metrics.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3.5 rounded-3 border bg-body h-100">
+                                <h6 class="fw-bold text-warning mb-1.5"><i class="bi bi-shield-check me-1.5"></i> Security & Session Integrity</h6>
+                                <p class="small text-muted mb-0">
+                                    Validating user credentials, enforcing workspace role permissions, detecting brute-force intrusions, and verifying 8-digit security PIN challenges.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3.5 rounded-3 border bg-body h-100">
+                                <h6 class="fw-bold text-purple mb-1.5"><i class="bi bi-file-earmark-arrow-down-fill me-1.5"></i> Export & Report Dispatch</h6>
+                                <p class="small text-muted mb-0">
+                                    Compiling your configured dashboard layout and charts into downloadable PDF, PNG, Excel, or JSON formats upon your explicit user trigger.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 4. DATA OWNERSHIP & INTELLECTUAL PROPERTY -->
+                <article id="sec-data-ownership" class="policy-card p-4 p-md-5">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="step-circle bg-success text-white">4</div>
+                        <h3 class="fw-bold mb-0">Data Ownership & Customer Rights</h3>
+                    </div>
+                    
+                    <div class="callout-box callout-success mb-4">
+                        <h5 class="fw-bold text-success mb-1"><i class="bi bi-award-fill me-2"></i> You Retain 100% Ownership of Your Business Data</h5>
+                        <p class="small text-muted mb-0">
+                            You and your organization retain all right, title, and interest (including all intellectual property rights) in and to all datasets, spreadsheets, SQL schemas, business formulas, dashboards, and reports created within or uploaded to Vedra BI.
+                        </p>
+                    </div>
+
+                    <h5 class="fw-bold mb-2">Our Binding Commitments:</h5>
+                    <ul class="text-muted small d-flex flex-column gap-2 ps-3 mb-0">
+                        <li><strong>No Data Monetization:</strong> We will never sell, lease, rent, trade, or monetize your raw data, aggregated metrics, or customer information to any third party, broker, or advertising network.</li>
+                        <li><strong>No Competitive Use:</strong> We do not use your business metrics or financial figures to develop competing products or commercial benchmarks.</li>
+                        <li><strong>Complete Portability:</strong> You can export all your workspace dashboards, layout configurations, and custom metadata at any time in standardized JSON and CSV formats.</li>
+                    </ul>
+                </article>
+
+                <!-- 5. SECURITY & CRYPTOGRAPHIC SAFEGUARDS -->
+                <article id="sec-security" class="policy-card p-4 p-md-5">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="step-circle bg-primary text-white">5</div>
+                        <h3 class="fw-bold mb-0">Security Controls & Cryptographic Safeguards</h3>
+                    </div>
+                    <p>
+                        We employ enterprise-grade administrative, technical, and physical safeguards designed to protect customer data against unauthorized access, accidental loss, or destruction.
+                    </p>
+
+                    <div class="row g-3 my-2">
+                        <div class="col-md-4">
+                            <div class="p-3 rounded-3 border bg-body h-100">
+                                <div class="fw-bold small text-primary mb-1"><i class="bi bi-lock-fill me-1"></i> In-Transit Encryption</div>
+                                <p class="small text-muted mb-0">All communications are encrypted using Transport Layer Security (TLS 1.3 / HTTPS) with modern cipher suites.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 rounded-3 border bg-body h-100">
+                                <div class="fw-bold small text-success mb-1"><i class="bi bi-hdd-network-fill me-1"></i> At-Rest Protection</div>
+                                <p class="small text-muted mb-0">Stored configuration artifacts and tokens are safeguarded using AES-256 encryption standards.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 rounded-3 border bg-body h-100">
+                                <div class="fw-bold small text-warning mb-1"><i class="bi bi-fingerprint me-1"></i> Salted Cryptography</div>
+                                <p class="small text-muted mb-0">Credentials are secured with unique CSPRNG 16-byte cryptographic salts and one-way SHA-256 digests.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded-3 border bg-body mt-3">
+                        <h6 class="fw-bold small mb-1"><i class="bi bi-shield-shaded text-primary me-1"></i> Multi-Factor 8-Digit Security PIN</h6>
+                        <p class="small text-muted mb-0">
+                            Vedra BI supports an independent 8-digit security PIN layer. Even if a local browser session is left open, critical settings, workspace exports, and sensitive modifications require secondary salted-hash verification.
+                        </p>
+                    </div>
+                </article>
+
+                <!-- 6. AI ANALYTICS GOVERNANCE -->
+                <article id="sec-ai-governance" class="policy-card p-4 p-md-5">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="step-circle bg-purple text-white">6</div>
+                        <h3 class="fw-bold mb-0">AI Analytics & Large Language Model Governance</h3>
+                    </div>
+                    <p>
+                        Vedra BI integrates AI capabilities (such as automated formula generation, SQL query synthesis, and natural language narrative summaries) powered by Google Gemini API.
+                    </p>
+
+                    <div class="table-responsive my-3">
+                        <table class="table table-bordered align-middle small mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 35%;">AI Governance Metric</th>
+                                    <th>Policy Standard & Operational Guarantee</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Model Training Policy</strong></td>
+                                    <td><span class="badge bg-success bg-opacity-10 text-success fw-bold">ZERO MODEL TRAINING</span> Customer prompts and dataset excerpts are NEVER used to train, retrain, or improve foundational AI models.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Data Retention by AI API</strong></td>
+                                    <td>Data transmitted for AI reasoning is processed in-memory under strict zero-retention enterprise terms and discarded immediately after response generation.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>User-Initiated Execution</strong></td>
+                                    <td>AI features only execute when you explicitly click an AI action (e.g., "Generate Insights", "Ask AI", "Explain Chart"). No automated background scraping occurs.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+
+                <!-- 7. THIRD-PARTY SERVICES & SUB-PROCESSORS -->
+                <article id="sec-subprocessors" class="policy-card p-4 p-md-5">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="step-circle bg-primary text-white">7</div>
+                        <h3 class="fw-bold mb-0">Third-Party Infrastructure & Sub-processors</h3>
+                    </div>
+                    <p class="text-muted small">
+                        To maintain high reliability, scalability, and security, we partner with industry-leading cloud infrastructure providers who comply with stringent international security standards (ISO 27001, SOC 2 Type II, FedRAMP).
+                    </p>
+
+                    <div class="table-responsive my-3">
+                        <table class="table table-bordered align-middle small mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Sub-processor</th>
+                                    <th>Role / Service Rendered</th>
+                                    <th>Data Location & Compliance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Google Cloud Platform (GCP)</strong></td>
+                                    <td>Container hosting, Cloud Run ingress, and CDN edge delivery.</td>
+                                    <td>Enterprise global regions; ISO 27001, SOC 2/3 certified.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Firebase Authentication</strong></td>
+                                    <td>Identity token issuance, Google OAuth federation, and session validation.</td>
+                                    <td>Encrypted token store; GDPR and CCPA compliant.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>DuckDB WASM Foundation</strong></td>
+                                    <td>Open-source client-side SQL execution engine compiled to WebAssembly.</td>
+                                    <td>Local execution entirely within user browser; 0% remote data transfer.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+
+                <!-- 8. DATA RETENTION, PORTABILITY & ERASURE -->
+                <article id="sec-data-retention" class="policy-card p-4 p-md-5">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="step-circle bg-warning text-dark">8</div>
+                        <h3 class="fw-bold mb-0">Data Retention, Portability & Right to Erasure</h3>
+                    </div>
+                    <p>
+                        We adhere to strict data minimization principles. We retain account metadata only for as long as your account remains active or as needed to provide you with services.
+                    </p>
+
+                    <div class="row g-3 my-2">
+                        <div class="col-md-6">
+                            <div class="p-3.5 rounded-3 border bg-body h-100">
+                                <h6 class="fw-bold text-success mb-1"><i class="bi bi-box-arrow-down me-1"></i> Data Portability</h6>
+                                <p class="small text-muted mb-0">
+                                    You have the continuous right to export all custom dashboards, configured formulas, telemetry histories, and account details in portable, machine-readable JSON format with 1 click from the Profile Settings tab.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3.5 rounded-3 border bg-body h-100">
+                                <h6 class="fw-bold text-danger mb-1"><i class="bi bi-trash3-fill me-1"></i> Right to Erasure (Complete Wipe)</h6>
+                                <p class="small text-muted mb-0">
+                                    You can trigger a permanent reset from the Profile Hub. This completely purges all local storage records, cached tokens, workspace preferences, and salted PIN hashes from your device.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 9. COOKIES & LOCAL STORAGE GOVERNANCE -->
+                <article id="sec-cookies" class="policy-card p-4 p-md-5">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="step-circle bg-primary text-white">9</div>
+                        <h3 class="fw-bold mb-0">Cookies & Local Browser Storage Governance</h3>
+                    </div>
+                    <p>
+                        Vedra BI uses local browser storage (such as <code class="code-pill">localStorage</code> and secure session tokens) strictly for functional operation, session state, and visual user preferences.
+                    </p>
+
+                    <div class="table-responsive my-3">
+                        <table class="table table-bordered align-middle small mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 30%;">Storage Key / Mechanism</th>
+                                    <th style="width: 20%;">Type</th>
+                                    <th style="width: 50%;">Operational Purpose</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code class="code-pill">vedrabi_current_user</code></td>
+                                    <td>Essential Local Token</td>
+                                    <td>Stores the active authenticated user profile, display name, and session state.</td>
+                                </tr>
+                                <tr>
+                                    <td><code class="code-pill">theme</code></td>
+                                    <td>Preference</td>
+                                    <td>Remembers your chosen display mode (Light Mode or Dark Mode).</td>
+                                </tr>
+                                <tr>
+                                    <td><code class="code-pill">vedrabi_security_accounts</code></td>
+                                    <td>Security Metadata</td>
+                                    <td>Holds the salted SHA-256 hash digests and unique account identifiers.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Third-Party Ad Trackers</strong></td>
+                                    <td><span class="badge bg-danger bg-opacity-10 text-danger fw-bold">NONE</span></td>
+                                    <td>We do NOT deploy advertising cookies, cross-site trackers, or third-party pixel beacons.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+
+                <!-- 10. GLOBAL COMPLIANCE -->
+                <article id="sec-compliance" class="policy-card p-4 p-md-5">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="step-circle bg-success text-white">10</div>
+                        <h3 class="fw-bold mb-0">Global Compliance (GDPR, CCPA / CPRA, SOC 2)</h3>
+                    </div>
+                    <p class="text-muted small">
+                        Vedra BI operates in accordance with worldwide privacy frameworks and data protection standards:
+                    </p>
+
+                    <div class="d-flex flex-column gap-2.5 my-2">
+                        <div class="p-3 rounded-3 border bg-body">
+                            <div class="fw-bold text-primary small mb-1">
+                                <i class="bi bi-shield-fill-check me-1"></i> General Data Protection Regulation (GDPR - EU & UK)
+                            </div>
+                            <p class="small text-muted mb-0">
+                                European Economic Area (EEA) and UK users have enforceable rights to access, rectify, restrict, object to processing, and erase their personal information. The legal basis for processing account data is contract fulfillment and legitimate operational security interests.
+                            </p>
+                        </div>
+
+                        <div class="p-3 rounded-3 border bg-body">
+                            <div class="fw-bold text-success small mb-1">
+                                <i class="bi bi-shield-fill-check me-1"></i> California Consumer Privacy Act & CPRA (CCPA - California, USA)
+                            </div>
+                            <p class="small text-muted mb-0">
+                                Under the CCPA/CPRA, California residents have the right to know what personal information is collected, request deletion, and opt-out of any data sale. As stated, <strong>Vedra BI does not sell or share personal information for cross-context behavioral advertising</strong>.
+                            </p>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- 11. CONTACT & DPO -->
+                <article id="sec-contact" class="policy-card p-4 p-md-5">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="step-circle bg-purple text-white">11</div>
+                        <h3 class="fw-bold mb-0">Contact Us & Data Protection Inquiries</h3>
+                    </div>
+                    <p>
+                        If you have questions, concerns, or requests regarding this Privacy Policy, your personal information, or our data practices, please contact our Data Protection Team:
+                    </p>
+
+                    <div class="row g-3 my-2">
+                        <div class="col-md-6">
+                            <div class="p-3.5 rounded-3 border bg-body h-100">
+                                <div class="fw-bold text-dark small mb-1"><i class="bi bi-envelope-fill text-primary me-1.5"></i> Privacy & Compliance Office</div>
+                                <div class="text-primary font-mono small mb-1">privacy@vedrabi.com</div>
+                                <div class="text-muted small" style="font-size: 0.8rem;">Responses typically within 24–48 business hours.</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3.5 rounded-3 border bg-body h-100">
+                                <div class="fw-bold text-dark small mb-1"><i class="bi bi-building text-success me-1.5"></i> Enterprise Support Center</div>
+                                <div class="text-muted small">Vedra BI Analytics Platform</div>
+                                <div class="text-muted small" style="font-size: 0.8rem;">Data Security & Trust Operations</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center pt-3 border-top mt-4">
+                        <a href="profile.html" class="btn btn-outline-primary px-4 py-2 fw-semibold rounded-3 me-2">
+                            <i class="bi bi-person-circle me-1"></i> Go to Profile Hub
+                        </a>
+                        <a href="index.html" class="btn btn-primary px-4 py-2 fw-semibold rounded-3">
+                            <i class="bi bi-speedometer2 me-1"></i> Open Analytics Dashboard
+                        </a>
+                    </div>
+                </article>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="mt-auto py-4 border-top bg-body text-center text-muted small">
+        <div class="container d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2">
+            <div>&copy; 2026 Vedra BI Analytics Platform. All rights reserved.</div>
+            <div class="d-flex gap-3">
+                <a href="index.html" class="text-decoration-none text-muted">Dashboard</a>
+                <a href="profile.html" class="text-decoration-none text-muted">Profile Hub</a>
+                <a href="login.html" class="text-decoration-none text-muted">Sign In</a>
+                <a href="privacy.html" class="text-decoration-none text-primary fw-bold">Privacy Policy</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Interactive Navigation Script -->
+    <script>
+        (function() {
+            // Theme toggle logic
+            const btnTheme = document.getElementById('btnThemeToggle');
+            const themeIcon = document.getElementById('themeToggleIcon');
+            const themeText = document.getElementById('themeToggleText');
+
+            const applyTheme = (theme) => {
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark-theme');
+                    document.body.classList.add('dark-theme');
+                    if (themeIcon) themeIcon.className = 'bi bi-sun-fill text-warning';
+                    if (themeText) themeText.textContent = 'Light Mode';
+                } else {
+                    document.documentElement.classList.remove('dark-theme');
+                    document.body.classList.remove('dark-theme');
+                    if (themeIcon) themeIcon.className = 'bi bi-moon-stars-fill text-slate-700';
+                    if (themeText) themeText.textContent = 'Dark Mode';
+                }
+            };
+
+            const initTheme = () => {
+                const saved = localStorage.getItem('theme') || 'light';
+                applyTheme(saved);
+            };
+
+            if (btnTheme) {
+                btnTheme.addEventListener('click', () => {
+                    const isDark = document.body.classList.contains('dark-theme');
+                    const next = isDark ? 'light' : 'dark';
+                    localStorage.setItem('theme', next);
+                    applyTheme(next);
+                });
+            }
+            initTheme();
+
+            // Scrollspy active state for table of contents
+            const tocLinks = document.querySelectorAll('#policyTocNav .toc-link');
+            const sections = document.querySelectorAll('article[id]');
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                const scrollPos = window.scrollY + 120;
+                sections.forEach(section => {
+                    const top = section.offsetTop;
+                    const height = section.offsetHeight;
+                    if (scrollPos >= top && scrollPos < top + height) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                if (current) {
+                    tocLinks.forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === '#' + current) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

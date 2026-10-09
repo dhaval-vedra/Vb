@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Vedra BI - Enterprise Visualizations, Data Analytics, Interactive Dashboards & AI Insights">
+    <meta name="theme-color" content="#0f172a">
+    <title>Vedra BI - Advanced Visualizations & Analytics</title>
+    
+    <!-- Critical CDN Resource Hints & Preconnects for Performance -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.plot.ly">
+    
+    <!-- Zero-FOUC Theme Pre-Initialization Engine (Synchronous Head Execution) -->
+    <script>
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('theme') || ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light');
+                const isDark = savedTheme === 'dark';
+                const root = document.documentElement;
+                if (isDark) {
+                    root.classList.add('dark-theme');
+                    root.classList.remove('silk-light-theme');
+                    root.setAttribute('data-bs-theme', 'dark');
+                    root.style.colorScheme = 'dark';
+                } else {
+                    root.classList.remove('dark-theme');
+                    root.classList.add('silk-light-theme');
+                    root.setAttribute('data-bs-theme', 'light');
+                    root.style.colorScheme = 'light';
+                }
+            } catch (e) {}
+        })();
+    </script>
+    
+    <script>
+        // Circular-Safe JSON Serialization & Console Shield (Prevents iframe bridge crash on circular objects)
+        (function() {
+            try {
+                const originalStringify = JSON.stringify;
+                function getCircularReplacer() {
+                    const seen = new WeakSet();
+                    return function(key, value) {
+                        if (typeof value === 'object' && value !== null) {
+                            if (seen.has(value)) {
+                                return '[Circular]';
+                            }
+                            seen.add(value);
+                        }
+                        return value;
+                    };
+                }
+
+                JSON.stringify = function(value, replacer, space) {
+                    try {
+                        return originalStringify.call(JSON, value, replacer, space);
+                    } catch (err) {
+                        if (err && (String(err).includes('circular') || String(err).includes('Converting circular structure to JSON'))) {
+                            try {
+                                const safeReplacer = (typeof replacer === 'function') 
+                                    ? function(k, v) {
+                                        const seen = (safeReplacer._seen || (safeReplacer._seen = new WeakSet()));
+                                        if (typeof v === 'object' && v !== null) {
+                                            if (seen.has(v)) return '[Circular]';
+                                            seen.add(v);
+                                        }
+                                        return replacer(k, v);
+                                    }
+                                    : getCircularReplacer();
+                                return originalStringify.call(JSON, value, safeReplacer, space);
+                            } catch (_) {
+                                return '"[Circular Object]"';
+                            }
+                        }
+                        throw err;
+                    }
+                };
+
+                const logMethods = ['warn', 'error', 'log', 'info', 'debug'];
+                logMethods.forEach(function(method) {
+                    if (typeof console !== 'undefined' && console[method]) {
+                        const orig = console[method];
+                        console[method] = function(...args) {
+                            try {
+                                orig.apply(console, args);
+                            } catch (e) {
+                                try {
+                                    const safeArgs = args.map(function(a) {
+                                        if (typeof a === 'object' && a !== null) {
+                                            try { return JSON.parse(JSON.stringify(a)); } catch (_) { return String(a); }
+                                        }
+                                        return a;
+                                    });
+                                    orig.apply(console, safeArgs);
+                                } catch (_) {}
+                            }
+                        };
+                    }
+                });
+            } catch (_) {}
+        })();
+    </script>
+
+    <script>
+        // Immediate Auth Guard - Redirect to login if not authenticated or session timed out
+        (function() {
+            try {
+                const pathname = window.location.pathname.toLowerCase();
+                if (pathname.includes('login')) return; // Do not run guard if already on login page
+                
+                const saved = localStorage.getItem('vedrabi_current_user');
+                if (!saved) {
+                    if (!window.location.href.includes('login.html')) {
+                        window.location.replace('login.html?reason=unauthorized');
+                    }
+                    return;
+                }
+
+                // Check 30-minute inactivity session timeout
+                const TIMEOUT_MS = 30 * 60 * 1000;
+                const lastActivity = localStorage.getItem('vedrabi_last_activity');
+                if (lastActivity) {
+                    const lastTime = parseInt(lastActivity, 10);
+                    if (!isNaN(lastTime) && (Date.now() - lastTime > TIMEOUT_MS)) {
+                        localStorage.removeItem('vedrabi_current_user');
+                        localStorage.removeItem('vedrabi_last_activity');
+                        window.location.replace('login.html?reason=timeout');
+                        return;
+                    }
+                }
+
+                const parsed = JSON.parse(saved);
+                const isValid = parsed && typeof parsed === 'object' && 
+                                parsed.uid && typeof parsed.uid === 'string' && parsed.uid !== 'guest_user' && parsed.uid.trim() !== '' && 
+                                parsed.email && typeof parsed.email === 'string' && parsed.email !== 'guest@vedrabi.com' && parsed.email.trim() !== '';
+                if (!isValid) {
+                    localStorage.removeItem('vedrabi_current_user');
+                    if (!window.location.href.includes('login.html')) {
+                        window.location.replace('login.html?reason=unauthorized');
+                    }
+                    return;
+                }
+
+                // Check 8-Digit Security Password setup and session verification
+                const email = (parsed.email || parsed.uid || '').toLowerCase().trim();
+                const secAccounts = JSON.parse(localStorage.getItem('vedrabi_security_accounts') || '{}');
+                const userSec = secAccounts[email];
+
+                const isSecConfigured = userSec && userSec.accountId && (userSec.pinHash || (userSec.securityPin && userSec.securityPin.length === 8));
+                if (!isSecConfigured) {
+                    window.location.replace('login.html?setup_security=true');
+                    return;
+                }
+
+                if (parsed.securityPinVerified !== true) {
+                    window.location.replace('login.html?verify_security=true');
+                    return;
+                }
+
+                // Refresh activity timestamp for active session
+                localStorage.setItem('vedrabi_last_activity', Date.now().toString());
+            } catch (e) {
+                localStorage.removeItem('vedrabi_current_user');
+                if (!window.location.href.includes('login.html')) {
+                    window.location.replace('login.html?reason=unauthorized');
+                }
+            }
+        })();
+    </script>
+    
+    <script>
+        // Global Error Prevention & Recovery Engine
+        window.addEventListener('error', function(event) {
+            handleGlobalError(event.error || { message: event.message }, event.filename, event.lineno, event.colno);
+        });
+        window.addEventListener('unhandledrejection', function(event) {
+            handleGlobalError(event.reason || new Error(event.reason), null, null, null);
+        });
+
+        let softRefreshCount = 0;
+        let lastSoftRefreshTime = 0;
+
+        function attemptChartSoftRefresh(error, lowerMsg) {
+            const now = Date.now();
+            if (now - lastSoftRefreshTime > 15000) {
+                softRefreshCount = 0;
+            }
+
+            const isChartRelated = lowerMsg.includes('chart') ||
+                                   lowerMsg.includes('echarts') ||
+                                   lowerMsg.includes('plotly') ||
+                                   lowerMsg.includes('canvas') ||
+                                   lowerMsg.includes('resize') ||
+                                   lowerMsg.includes('relayout') ||
+                                   lowerMsg.includes('getcontext') ||
+                                   lowerMsg.includes('getinstancebydom') ||
+                                   lowerMsg.includes('getboundingclientrect') ||
+                                   lowerMsg.includes('tooltip') ||
+                                   lowerMsg.includes('legend') ||
+                                   lowerMsg.includes('dataset') ||
+                                   lowerMsg.includes('cannot read properties of null') ||
+                                   lowerMsg.includes('undefined is not an object');
+
+            if (!isChartRelated || softRefreshCount >= 3) {
+                return false;
+            }
+
+            softRefreshCount++;
+            lastSoftRefreshTime = now;
+
+            console.warn(`[Global Error Recovery] Non-fatal chart error detected. Attempting soft-refresh (${softRefreshCount}/3)...`);
+
+            try {
+                let targetContainer = null;
+                if (error && error.target) {
+                    targetContainer = error.target.closest ? error.target.closest('.visualization-container') : null;
+                }
+
+                if (!targetContainer) {
+                    const containers = document.querySelectorAll('.visualization-container');
+                    containers.forEach(container => {
+                        const canvas = container.querySelector('canvas, .chart-canvas');
+                        if (canvas && (canvas.width === 0 || canvas.height === 0)) {
+                            targetContainer = container;
+                        }
+                    });
+                }
+
+                if (targetContainer) {
+                    const chartDom = targetContainer.querySelector('.chart-canvas') || targetContainer;
+                    if (typeof echarts !== 'undefined' && chartDom) {
+                        const inst = echarts.getInstanceByDom(chartDom);
+                        if (inst && !inst.isDisposed()) {
+                            try { inst.resize(); } catch (e) {}
+                        }
+                    }
+                    if (typeof Plotly !== 'undefined' && chartDom) {
+                        try { Plotly.relayout(chartDom, { autosize: true }); } catch (e) {}
+                    }
+                } else {
+                    if (typeof echarts !== 'undefined') {
+                        const doms = document.querySelectorAll('.chart-canvas');
+                        doms.forEach(dom => {
+                            const inst = echarts.getInstanceByDom(dom);
+                            if (inst && !inst.isDisposed()) {
+                                try { inst.resize(); } catch (e) {}
+                            }
+                        });
+                    }
+                    if (typeof Plotly !== 'undefined') {
+                        const plotlyDoms = document.querySelectorAll('.chart-canvas');
+                        plotlyDoms.forEach(dom => {
+                            try { Plotly.relayout(dom, { autosize: true }); } catch (e) {}
+                        });
+                    }
+                }
+
+                const chartContainers = document.querySelectorAll('.visualization-container');
+                chartContainers.forEach(c => {
+                    c.classList.remove('chart-fade-in');
+                    void c.offsetWidth;
+                    c.classList.add('chart-fade-in');
+                });
+
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage("⚡ Chart components soft-refreshed successfully.", "info");
+                } else {
+                    console.info("Chart component soft-refreshed successfully.");
+                }
+
+                return true;
+            } catch (recoveryErr) {
+                console.error("[Global Error Recovery Failed]:", recoveryErr);
+                return false;
+            }
+        }
+
+        function handleGlobalError(error, source, lineno, colno) {
+            // Ignore benign development server / Vite websocket / HMR / network errors
+            const errMsg = error ? (error.message || String(error)) : '';
+            const errStack = (error && error.stack) ? error.stack : '';
+            const errSrc = source ? String(source) : '';
+            const lowerMsg = (errMsg + ' ' + errStack + ' ' + errSrc).toLowerCase();
+            
+            if (
+                !lowerMsg.trim() ||
+                lowerMsg.includes('websocket') ||
+                lowerMsg.includes('vite') ||
+                lowerMsg.includes('hmr') ||
+                lowerMsg.includes('hot-update') ||
+                lowerMsg.includes('resizeobserver') ||
+                lowerMsg.includes('speech') ||
+                lowerMsg.includes('canceled') ||
+                lowerMsg.includes('abort') ||
+                lowerMsg.includes('failed to fetch') ||
+                lowerMsg.includes('networkerror') ||
+                lowerMsg.includes('chrome-extension') ||
+                lowerMsg.includes('script error') ||
+                lowerMsg.includes('converting circular structure to json') ||
+                lowerMsg.includes('circular structure') ||
+                lowerMsg.includes('closes the circle') ||
+                lowerMsg.includes('_aistudio-iframe')
+            ) {
+                return;
+            }
+
+            console.error('[Global Error Caught]:', error, source, lineno, colno);
+
+            // Attempt soft-refresh for non-fatal chart errors before resorting to full page reload overlay
+            if (attemptChartSoftRefresh(error, lowerMsg)) {
+                return;
+            }
+            
+            // Only show if the overlay doesn't already exist to prevent duplicate triggers
+            if (document.getElementById('global-error-overlay')) return;
+            
+            const errorMessage = error ? (error.message || String(error)) : 'Unknown Error';
+            const errorStack = error ? (error.stack || '') : '';
+            const locationInfo = source ? `File: ${source}:${lineno}:${colno}` : 'In-line or Async Execution';
+            
+            const isDark = document.documentElement.classList.contains('dark-theme') || localStorage.getItem('theme') === 'dark';
+            
+            const overlay = document.createElement('div');
+            overlay.id = 'global-error-overlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background-color: ${isDark ? 'rgba(11, 15, 25, 0.96)' : 'rgba(248, 250, 252, 0.96)'};
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                color: ${isDark ? '#f8fafc' : '#0f172a'};
+                z-index: 99999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                padding: 24px;
+                overflow-y: auto;
+                box-sizing: border-box;
+            `;
+            
+            overlay.innerHTML = `
+                <div style="
+                    max-width: 560px;
+                    width: 100%;
+                    background: ${isDark ? '#111827' : '#ffffff'};
+                    border: 1px solid ${isDark ? '#1f2937' : '#e2e8f0'};
+                    border-radius: 16px;
+                    padding: 36px 32px;
+                    box-shadow: 0 20px 40px -15px ${isDark ? 'rgba(0,0,0,0.7)' : 'rgba(15,23,42,0.12)'};
+                    text-align: center;
+                ">
+                    <!-- Vedra BI Resilience Badge -->
+                    <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: ${isDark ? 'rgba(59,130,246,0.12)' : 'rgba(37,99,235,0.08)'}; color: ${isDark ? '#60a5fa' : '#2563eb'}; border: 1px solid ${isDark ? 'rgba(59,130,246,0.25)' : 'rgba(37,99,235,0.18)'}; margin-bottom: 20px;">
+                        <i class="bi bi-shield-lock-fill"></i> Vedra BI System Diagnostic
+                    </div>
+
+                    <!-- Icon Container -->
+                    <div style="
+                        width: 56px;
+                        height: 56px;
+                        margin: 0 auto 18px;
+                        border-radius: 14px;
+                        background: ${isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)'};
+                        border: 1px solid ${isDark ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)'};
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #ef4444;
+                        font-size: 26px;
+                    ">
+                        <i class="bi bi-exclamation-octagon-fill"></i>
+                    </div>
+                    
+                    <!-- Title -->
+                    <h3 style="font-weight: 700; font-size: 20px; margin-bottom: 8px; color: ${isDark ? '#f8fafc' : '#0f172a'}; letter-spacing: -0.3px;">
+                        Application Exception Intercepted
+                    </h3>
+                    <p style="font-size: 14px; line-height: 1.55; color: ${isDark ? '#94a3b8' : '#64748b'}; margin-bottom: 24px;">
+                        An unexpected runtime issue occurred. In-memory data safeguards have preserved your state. Use the controls below to resume your workspace.
+                    </p>
+                    
+                    <!-- Action Grid -->
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px;">
+                        <button onclick="window.location.reload()" style="
+                            padding: 11px 20px;
+                            background: #2563eb;
+                            color: #ffffff;
+                            border: none;
+                            border-radius: 8px;
+                            font-weight: 600;
+                            font-size: 14px;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 8px;
+                            box-shadow: 0 4px 12px rgba(37,99,235,0.22);
+                            transition: background-color 0.18s ease;
+                        ">
+                            <i class="bi bi-arrow-clockwise"></i> Reload Session & Reconnect
+                        </button>
+                        
+                        <a href="index.html" style="
+                            text-decoration: none;
+                            padding: 11px 20px;
+                            background: ${isDark ? '#1f2937' : '#f1f5f9'};
+                            color: ${isDark ? '#f8fafc' : '#0f172a'};
+                            border: 1px solid ${isDark ? '#374151' : '#cbd5e1'};
+                            border-radius: 8px;
+                            font-weight: 600;
+                            font-size: 14px;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 8px;
+                            transition: all 0.18s ease;
+                        ">
+                            <i class="bi bi-speedometer2"></i> Return to Main Dashboard
+                        </a>
+
+                        <button onclick="if(confirm('Reset local cache and workspace preferences? This will refresh your analytical workspace.')) { localStorage.clear(); sessionStorage.clear(); window.location.reload(); }" style="
+                            padding: 10px 18px;
+                            background: transparent;
+                            color: ${isDark ? '#94a3b8' : '#64748b'};
+                            border: 1px solid ${isDark ? '#374151' : '#e2e8f0'};
+                            border-radius: 8px;
+                            font-weight: 500;
+                            font-size: 13px;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 8px;
+                            transition: all 0.18s ease;
+                        ">
+                            <i class="bi bi-arrow-counterclockwise"></i> Safe Mode Reset (Clear Cache)
+                        </button>
+                    </div>
+                    
+                    <!-- Technical Diagnostics Accordion -->
+                    <details style="text-align: left; background: ${isDark ? '#0b0f19' : '#f8fafc'}; border: 1px solid ${isDark ? '#1f2937' : '#e2e8f0'}; border-radius: 10px; padding: 12px 14px;">
+                        <summary style="cursor: pointer; font-size: 13px; font-weight: 600; color: ${isDark ? '#60a5fa' : '#2563eb'}; outline: none; user-select: none; display: flex; align-items: center; justify-content: space-between;">
+                            <span style="display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="bi bi-terminal-fill"></i> Technical Diagnostic Details
+                            </span>
+                            <span style="font-size: 11px; opacity: 0.7;">Click to inspect</span>
+                        </summary>
+                        <div style="margin-top: 10px; font-size: 12px; font-family: 'JetBrains Mono', monospace; white-space: pre-wrap; word-break: break-all; max-height: 180px; overflow-y: auto; color: ${isDark ? '#94a3b8' : '#334155'}; background: ${isDark ? '#070a12' : '#ffffff'}; padding: 10px; border-radius: 6px; border: 1px solid ${isDark ? '#1f2937' : '#e2e8f0'};">
+<strong style="color: #ef4444;">Error:</strong> ${errorMessage}
+<strong style="color: ${isDark ? '#60a5fa' : '#2563eb'};">Source:</strong> ${locationInfo}
+${errorStack ? `\n<strong style="color: ${isDark ? '#cbd5e1' : '#64748b'};">Stack Trace:</strong>\n${errorStack}` : ''}
+                        </div>
+                    </details>
+                </div>
+            `;
+            
+            document.body.appendChild(overlay);
+        }
+
+        // Early CDN Fallback engine
+        window.handleCdnError = function(element, fallbackUrl) {
+            console.error('[CDN Fallback Engine] Failed to load resource:', element.src || element.href);
+            if (element.dataset.fallbackTried === 'true') return;
+            
+            if (element.tagName === 'SCRIPT') {
+                const script = document.createElement('script');
+                script.src = fallbackUrl;
+                script.dataset.fallbackTried = 'true';
+                script.onload = () => console.log('[CDN Fallback Engine] Loaded fallback:', fallbackUrl);
+                script.onerror = () => handleGlobalError(new Error('Failed to load critical script ' + fallbackUrl));
+                document.head.appendChild(script);
+            } else if (element.tagName === 'LINK') {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = fallbackUrl;
+                link.dataset.fallbackTried = 'true';
+                link.onload = () => console.log('[CDN Fallback Engine] Loaded fallback stylesheet:', fallbackUrl);
+                document.head.appendChild(link);
+            }
+        };
+    </script>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" onerror="handleCdnError(this, 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css')">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" onerror="handleCdnError(this, 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css')">
+    
+    <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet" onerror="handleCdnError(this, 'https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.snow.css')" />
+    
+    <link rel="stylesheet" href="src/css/dark_theam.css" />
+    <link rel="stylesheet" href="src/css/core.css" />
+    <link rel="stylesheet" href="src/css/editor_templates.css" />
+    
+    <link rel="stylesheet" href="src/css/ai_advice.css"/>
+    <link rel="stylesheet" href="src/css/all.css"/>
+    <link rel="stylesheet" href="src/css/small_menubarall.css"/>
+    <link rel="stylesheet" href="src/css/custom.css"/>
+    <!-- Pickr Theme CSS moved to head to prevent style reflows -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/themes/classic.min.css"/>
+    <script>
+        // Define global CDN error fallback handler early
+        window.handleCdnError = function(element, fallbackUrl) {
+            console.warn('[CDN Engine] Script load issue detected for:', element ? (element.src || element.href) : 'unknown');
+            if (fallbackUrl && element && element.dataset.fallbackTried !== 'true') {
+                element.dataset.fallbackTried = 'true';
+                if (element.tagName === 'SCRIPT') {
+                    const script = document.createElement('script');
+                    script.src = fallbackUrl;
+                    script.crossOrigin = 'anonymous';
+                    document.head.appendChild(script);
+                }
+            }
+        };
+
+        // Suppress opaque cross-origin script error noise gracefully
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            if (typeof msg === 'string' && msg.toLowerCase().includes('script error')) {
+                console.warn('[App Resilience] Cross-origin script error intercepted and handled.');
+                return true; // prevent error popup / console noise
+            }
+            return false;
+        };
+    </script>
+</head>
+<body>
+    <!-- Floating Exit Full Dashboard View Button (visible in full-dashboard-active mode) -->
+    <button id="floatingExitFullDashboardBtn" class="floating-zen-btn" title="Exit Full Dashboard View (Esc)" aria-label="Exit Full Dashboard View">
+        <i class="bi bi-arrows-angle-contract"></i>
+    </button>
+
+    <nav class="main-menu-bar" role="navigation" aria-label="Main Navigation">
+        <!-- Sidebar Brand (Visible on Desktop Sidebar) -->
+        <div class="sidebar-brand d-none d-lg-flex align-items-center justify-content-center mb-3 py-1">
+            <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; box-shadow: 0 4px 12px rgba(13, 110, 253, 0.25);">
+                <i class="bi bi-cpu fs-5"></i>
+            </div>
+        </div>
+
+        <a href="#" class="nav-link" id="menuData" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" data-menu-target="dataContent" title="Data (Upload & Manage)" aria-label="Data">
+            <i class="bi bi-file-earmark-arrow-up"></i>
+        </a>
+        <a href="#" class="nav-link" id="menuCharts" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" data-menu-target="chartSettingsContent" title="Charts (Create & Edit)" aria-label="Charts">
+            <i class="bi bi-bar-chart"></i>
+        </a>
+        <a href="#" class="nav-link" id="menuKpiBuilder" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" data-menu-target="kpiBuilderContent" title="KPI Cards & Metrics" aria-label="KPIs">
+            <i class="bi bi-patch-check-fill"></i>
+        </a>
+        <a href="#" class="nav-link" id="menuTemplateGallery" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" data-menu-target="templateGalleryContent" title="Template Cards Gallery (Ready-to-use Cards)" aria-label="Templates">
+            <i class="bi bi-grid-1x2-fill"></i>
+        </a>
+        <a href="#" class="nav-link" id="menuAdvancedSettings" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" data-menu-target="advancedSettingsContent" title="Settings & Analytics" aria-label="Settings">
+            <i class="bi bi-sliders"></i>
+        </a>
+        <a href="#" class="nav-link" id="menuAdditionalActions" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" data-menu-target="additionalActionsContent" title="Operations & Actions" aria-label="Actions">
+            <i class="bi bi-gear"></i>
+        </a>
+        <a href="#" class="nav-link" id="menuFilterSort" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" data-menu-target="filterSortContent" title="Filters, Slicers & Sort" aria-label="Filters">
+            <i class="bi bi-filter"></i>
+        </a>
+        <a href="#" class="nav-link" id="menuDashboardView" data-bs-toggle="modal" data-bs-target="#mainMenuModal" data-menu-target="dashboardViewContent" title="Dashboard Views & Layers" aria-label="Dashboard">
+            <i class="bi bi-eye"></i>
+        </a>
+        <a href="#" class="nav-link" id="menuChartFormatting" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" data-menu-target="chartFormattingContent" title="Visual Formatting & Styles" aria-label="Formatting">
+            <i class="bi bi-brush"></i>
+        </a>
+        <a href="#" class="nav-link" id="menuChartEffects" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" data-menu-target="chartEffectsContent" title="Effects & Aesthetics" aria-label="Effects">
+            <i class="bi bi-magic"></i>
+        </a>
+        <a href="#" class="nav-link" id="menuTextbox" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" data-menu-target="textboxContent" title="Add Textbox & Notes" aria-label="Textbox">
+            <i class="bi bi-textarea-t"></i>
+        </a>
+        <a href="learning.html" class="nav-link" id="menuLearning" title="Vedra BI Learning Center & Formula Guide" aria-label="Learning Guide">
+            <i class="bi bi-mortarboard-fill text-amber-500"></i>
+        </a>
+        <a href="profile.html" class="nav-link" id="menuUserInfo" title="User Profile & Workspace" aria-label="Profile">
+            <i class="bi bi-person-circle"></i>
+        </a>
+        <a href="#" class="nav-link" id="toggleDashboardSectionBtn" title="Toggle Dashboard Visibility" aria-label="Toggle Dashboard">
+            <i class="bi bi-eye-slash" id="toggleDashboardSectionIcon"></i>
+        </a>
+        <a href="#" class="nav-link" id="menuToggleFullDashboard" title="Full Dashboard View (Hide Menus & Table)" aria-label="Full Dashboard View">
+            <i class="bi bi-arrows-fullscreen"></i>
+        </a>
+        <a href="#" class="nav-link" id="menuToggleTheme" title="Toggle Theme (Light/Dark)" aria-label="Toggle Theme">
+            <i class="bi bi-moon-stars-fill theme-toggle-icon"></i>
+        </a>
+    </nav>
+
+    <nav class="small-menu-bar py-1 px-2 border-bottom bg-light-subtle shadow-2xs" role="navigation" aria-label="Quick Tools Navigation">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 w-100">
+            <!-- Group 1: View Modes & Layouts (Icon-Only) -->
+            <div class="d-flex align-items-center gap-1">
+                <button id="toggleTheme" class="btn btn-sm btn-outline-secondary" title="Toggle Theme (Light/Dark)" aria-label="Toggle Theme"><i class="bi bi-moon-stars-fill"></i></button>
+                <button id="btnToggleFullDashboard" class="btn btn-sm btn-outline-secondary" title="Full Dashboard View (Hide Menus & Table)" aria-label="Full Dashboard View"><i class="bi bi-arrows-fullscreen"></i></button>
+                <button id="toggleDashboardSectionSmallBtn" class="btn btn-sm btn-outline-secondary" title="Show/Hide Dashboard" aria-label="Show/Hide Dashboard"><i class="bi bi-eye-slash-fill"></i></button>
+                <div class="vr mx-1 opacity-25"></div>
+                <button id="btnToggleSnapGrid" class="btn btn-sm btn-outline-secondary" title="Snap to Grid (Ctrl+G)" aria-label="Snap to Grid">
+                    <i class="bi bi-grid-fill"></i>
+                </button>
+                <button id="btnToggleComparisonView" class="btn btn-sm btn-outline-secondary" title="Comparison Mode" aria-label="Comparison Mode">
+                    <i class="bi bi-layout-split"></i>
+                </button>
+                <button id="btnOpenSavedViewsModal" class="btn btn-sm btn-outline-secondary position-relative" title="Saved Views & Snapshots" aria-label="Saved Views">
+                    <i class="bi bi-images"></i>
+                    <span id="savedViewsCountBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary text-2xs" style="display:none; transform: translate(-30%, -20%) !important;">0</span>
+                </button>
+                <button id="btnAutoArrangeGrid" class="btn btn-sm btn-outline-secondary" title="Auto Grid Layout" aria-label="Auto Grid Layout">
+                    <i class="bi bi-grid-3x3-gap-fill"></i>
+                </button>
+                <button id="toggleLockModeBtn" class="btn btn-sm btn-outline-secondary" title="Lock Dashboard (Disable Drag & Resize)" aria-label="Lock Dashboard">
+                    <i class="bi bi-unlock"></i>
+                </button>
+                <div class="dropdown d-inline-block" id="multiDashboardDropdownWrapper">
+                    <button id="btnMultiDashboardDropdown" class="btn btn-sm btn-outline-secondary dropdown-toggle d-inline-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Dashboard Pages & Tabs" aria-label="Dashboard Pages">
+                        <i class="bi bi-folder2-open text-primary"></i>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-start p-2 shadow-lg border-0 rounded-4" style="min-width: 240px; z-index: 1060;">
+                        <div class="d-flex align-items-center justify-content-between px-2 py-1 mb-1 border-bottom">
+                            <span class="fw-bold text-xs text-slate-700 d-flex align-items-center gap-1">
+                                <i class="bi bi-folder2-open text-primary"></i> Pages & Tabs
+                            </span>
+                            <button id="btnQuickAddDashboard" class="btn btn-xs btn-primary rounded-pill px-2 py-0.5 d-flex align-items-center gap-1" title="New Page">
+                                <i class="bi bi-plus"></i> <span class="text-2xs fw-semibold">New</span>
+                            </button>
+                        </div>
+                        <div id="quickDashboardPagesList" class="d-flex flex-column gap-1 py-1" style="max-height: 220px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+                <div class="dropdown d-inline-block" id="lttbDropdownContainer">
+                    <button id="btnLttbSamplingDropdown" class="btn btn-sm btn-outline-secondary dropdown-toggle d-inline-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="LTTB Smart Data Sampling Resolution" aria-label="LTTB Sampling">
+                        <i class="bi bi-speedometer2 text-blue-600"></i>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-start p-3 shadow-lg border-0 rounded-4" style="width: 320px; z-index: 1060;">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="mb-0 text-slate-800 fw-bold d-flex align-items-center gap-1.5" style="font-size: 0.85rem;">
+                                <i class="bi bi-speedometer2 text-primary"></i> LTTB Sampling Control
+                            </h6>
+                            <span class="badge bg-blue-50 text-blue-700 border border-blue-200 text-2xs fw-bold">60 FPS</span>
+                        </div>
+                        <p class="text-muted small mb-2" style="font-size: 0.72rem; line-height: 1.3;">
+                            Adjust data resolution dynamically. Preserves peaks & shape while optimizing rendering.
+                        </p>
+                        
+                        <!-- Presets in Dropdown -->
+                        <div class="d-flex gap-1 mb-2.5">
+                            <button class="btn btn-xs btn-outline-secondary flex-fill py-1" onclick="if(window.setLTTBPreset) window.setLTTBPreset('turbo', true);" style="font-size: 0.7rem;" title="500 points">⚡ Turbo</button>
+                            <button class="btn btn-xs btn-primary active flex-fill py-1" onclick="if(window.setLTTBPreset) window.setLTTBPreset('balanced', true);" style="font-size: 0.7rem;" title="1,500 points">⚖️ Balanced</button>
+                            <button class="btn btn-xs btn-outline-secondary flex-fill py-1" onclick="if(window.setLTTBPreset) window.setLTTBPreset('high', true);" style="font-size: 0.7rem;" title="5,000 points">🎯 High</button>
+                            <button class="btn btn-xs btn-outline-secondary flex-fill py-1" onclick="if(window.setLTTBPreset) window.setLTTBPreset('raw', true);" style="font-size: 0.7rem;" title="All raw points">📦 Raw</button>
+                        </div>
+
+                        <!-- Dropdown Slider -->
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label for="lttbDropdownSlider" class="form-label small fw-bold text-slate-600 mb-0" style="font-size: 0.72rem;">Resolution Slider:</label>
+                                <span id="lttbDropdownDisplay" class="badge bg-primary text-white fw-bold" style="font-size: 0.72rem;">1,500 pts</span>
+                            </div>
+                            <input type="range" class="form-range" id="lttbDropdownSlider" min="100" max="10000" step="100" value="1500" oninput="const disp = document.getElementById('lttbDropdownDisplay'); if (disp) disp.textContent = Number(this.value).toLocaleString() + ' pts'; if(window.setLTTBResolution) window.setLTTBResolution(parseInt(this.value, 10), true);">
+                            <div class="d-flex justify-content-between text-muted" style="font-size: 0.65rem;">
+                                <span>100 pts (Fast)</span>
+                                <span>5,000 pts</span>
+                                <span>10,000 pts (Detail)</span>
+                            </div>
+                        </div>
+
+                        <!-- Custom Quick Picker -->
+                        <div class="border-top pt-2 mt-1">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span class="text-xs fw-semibold text-slate-700">🎯 Custom Samples:</span>
+                                <button class="btn btn-xs btn-outline-primary py-0.5 px-2" style="font-size: 0.72rem;" onclick="if(window.openOffcanvas) window.openOffcanvas('advancedSettingsContent'); else { const btn = document.getElementById('toggleLockModeBtn'); if(btn) btn.click(); }">
+                                    <i class="bi bi-sliders"></i> Pick Rows / Spikes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Group 2: AI & Showcase Tools (Icon-Only) -->
+            <div class="d-flex align-items-center gap-1">
+                <button id="btnStartPresentation" class="btn btn-sm btn-outline-secondary" title="Presentation Mode (Slideshow)" aria-label="Presentation Mode"><i class="bi bi-projector-fill text-indigo-500"></i></button>
+                <button id="btnAudioNarrator" class="btn btn-sm btn-outline-secondary" title="Audio Executive Brief" aria-label="Audio Brief"><i class="bi bi-volume-up-fill text-rose-500"></i></button>
+                <button id="btnCommandPalette" class="btn btn-sm btn-outline-secondary" title="Quick Command Palette (Ctrl+K)" aria-label="Quick Search"><i class="bi bi-search"></i></button>
+                <button id="btnHotkeysModal" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#hotkeysModal" title="Keyboard Shortcuts (?)" aria-label="Keyboard Shortcuts"><i class="bi bi-keyboard-fill"></i></button>
+                <button id="btnQuickTour" class="btn btn-sm btn-outline-secondary" title="Quick Interactive Tour" aria-label="Quick Tour"><i class="bi bi-compass-fill"></i></button>
+                <button id="btnLearningHandbook" class="btn btn-sm btn-outline-secondary" onclick="window.location.href='learning.html';" title="Vedra BI Academy & Learning Handbook" aria-label="Learning Academy"><i class="bi bi-mortarboard-fill text-amber-500"></i></button>
+                <div class="dropdown d-inline-block" id="appLanguageDropdownContainer">
+                    <button id="btnAppLanguageDropdown" class="btn btn-sm btn-outline-secondary dropdown-toggle d-inline-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Change Language" aria-label="Change Language">
+                        <i class="bi bi-translate text-primary"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3" style="z-index: 1060;">
+                        <li><a class="dropdown-item py-1.5 d-flex align-items-center gap-2 cursor-pointer lang-option-item" data-lang="en" href="javascript:void(0)" onclick="if(window.setAppLanguage) window.setAppLanguage('en');"><span class="fw-semibold">🇬🇧 English</span></a></li>
+                        <li><a class="dropdown-item py-1.5 d-flex align-items-center gap-2 cursor-pointer lang-option-item" data-lang="hi" href="javascript:void(0)" onclick="if(window.setAppLanguage) window.setAppLanguage('hi');"><span class="fw-semibold">🇮🇳 Hindi</span></a></li>
+                        <li><a class="dropdown-item py-1.5 d-flex align-items-center gap-2 cursor-pointer lang-option-item" data-lang="gu" href="javascript:void(0)" onclick="if(window.setAppLanguage) window.setAppLanguage('gu');"><span class="fw-semibold">🇮🇳 Gujarati</span></a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Group 3: Data Actions & Export (Icon-Only) -->
+            <div class="d-flex align-items-center gap-1">
+                <button id="btnSmartDataEngine" class="btn btn-sm btn-outline-secondary position-relative" title="Smart Compression & Dataset Summary Engine" aria-label="Smart Compression & Summary Studio">
+                    <i class="bi bi-file-earmark-zip-fill text-emerald-600"></i>
+                </button>
+                <button id="editDataBtn" class="btn btn-sm btn-outline-secondary" onclick="window.location.href='edit_data.html';" title="Edit Data (Excel Grid)" aria-label="Edit Data">
+                    <i class="bi bi-pencil-square"></i>
+                </button>
+                <button id="addDataBtn" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addDataModal" title="Add Data Record" aria-label="Add Data">
+                    <i class="bi bi-plus-square-fill"></i>
+                </button>
+                <button id="downloadTemplate" class="btn btn-sm btn-outline-secondary" title="Download Excel Template" aria-label="Download Template"><i class="bi bi-download"></i></button>
+                
+                <div class="btn-group" role="group">
+                    <button id="exportReportDropdown" class="btn btn-sm btn-outline-secondary dropdown-toggle d-inline-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Export Report (PDF / PNG / CSV)" aria-label="Export Report">
+                        <i class="bi bi-file-earmark-arrow-down-fill text-orange-500"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3" aria-labelledby="exportReportDropdown" style="z-index: 1050;">
+                        <li><a class="dropdown-item py-2 d-flex align-items-center" href="#" id="exportPDFBtn"><i class="bi bi-file-earmark-pdf-fill text-danger me-2 fs-5"></i> <div><span class="fw-bold d-block text-xs">Executive PDF Report</span><small class="text-muted" style="font-size: 10px;">With Logo, KPIs & Annotations</small></div></a></li>
+                        <li><a class="dropdown-item py-2" href="#" id="exportPNGDashboardBtn"><i class="bi bi-image text-primary me-2 fs-6"></i> Capture Dashboard PNG</a></li>
+                        <li><a class="dropdown-item py-2" href="#" id="exportCSVFilteredBtn"><i class="bi bi-filetype-csv text-success me-2 fs-6"></i> Export Filtered CSV</a></li>
+                    </ul>
+                </div>
+
+                <!-- Periodic Autosave Status Badge (Icon Only) -->
+                <div id="autosaveStatusBadge" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center p-0" title="Auto-save active & synced" aria-label="Autosave Status">
+                    <i class="bi bi-cloud-check-fill text-success fs-6"></i>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <div id="loadingOverlay">
+        <!-- Sidebar Skeleton (Hidden on Mobile) -->
+        <div class="skeleton-sidebar">
+            <div class="skeleton-logo skeleton-pulse"></div>
+            <div class="skeleton-menu-item skeleton-pulse" style="margin-top: 24px;"></div>
+            <div class="skeleton-menu-item skeleton-pulse"></div>
+            <div class="skeleton-menu-item skeleton-pulse"></div>
+            <div class="skeleton-menu-item skeleton-pulse"></div>
+            <div class="skeleton-menu-item skeleton-pulse"></div>
+            <div class="skeleton-menu-item skeleton-pulse"></div>
+            <div class="skeleton-menu-item skeleton-pulse"></div>
+            <div class="skeleton-menu-item skeleton-pulse"></div>
+        </div>
+        
+        <!-- Main Content Skeleton -->
+        <div class="skeleton-main">
+            <!-- Top Header Skeleton -->
+            <div class="skeleton-header">
+                <div class="skeleton-title skeleton-pulse"></div>
+                <div class="skeleton-header-actions">
+                    <div class="skeleton-btn skeleton-pulse"></div>
+                    <div class="skeleton-btn skeleton-pulse"></div>
+                    <div class="skeleton-btn skeleton-pulse"></div>
+                </div>
+            </div>
+            
+            <!-- Controls / Filter Panel Skeleton -->
+            <div class="skeleton-filter-bar skeleton-pulse"></div>
+            
+            <!-- Bento-style Dashboard Cards Skeleton -->
+            <div class="skeleton-grid">
+                <!-- Card 1 (Simulated Bar/Column Chart Card) -->
+                <div class="skeleton-card">
+                    <div class="skeleton-card-title skeleton-pulse"></div>
+                    <div class="skeleton-chart-area">
+                        <div class="skeleton-bar skeleton-pulse" style="height: 35%;"></div>
+                        <div class="skeleton-bar skeleton-pulse" style="height: 60%;"></div>
+                        <div class="skeleton-bar skeleton-pulse" style="height: 45%;"></div>
+                        <div class="skeleton-bar skeleton-pulse" style="height: 80%;"></div>
+                        <div class="skeleton-bar skeleton-pulse" style="height: 25%;"></div>
+                        <div class="skeleton-bar skeleton-pulse" style="height: 65%;"></div>
+                        <div class="skeleton-bar skeleton-pulse" style="height: 50%;"></div>
+                    </div>
+                </div>
+                
+                <!-- Card 2 (Simulated Line Chart Card) -->
+                <div class="skeleton-card">
+                    <div class="skeleton-card-title skeleton-pulse"></div>
+                    <div class="skeleton-chart-area">
+                        <div class="skeleton-bar skeleton-pulse" style="height: 75%;"></div>
+                        <div class="skeleton-bar skeleton-pulse" style="height: 40%;"></div>
+                        <div class="skeleton-bar skeleton-pulse" style="height: 55%;"></div>
+                        <div class="skeleton-bar skeleton-pulse" style="height: 30%;"></div>
+                        <div class="skeleton-bar skeleton-pulse" style="height: 85%;"></div>
+                        <div class="skeleton-bar skeleton-pulse" style="height: 50%;"></div>
+                        <div class="skeleton-bar skeleton-pulse" style="height: 70%;"></div>
+                    </div>
+                </div>
+                
+                <!-- Card 3 (Simulated Stacked/Complex Chart Card) -->
+                <div class="skeleton-card">
+                    <div class="skeleton-card-title skeleton-pulse"></div>
+                    <div class="skeleton-chart-area">
+                        <div class="skeleton-bar skeleton-pulse" style="height: 45%;"></div>
+                        <div class="skeleton-bar skeleton-pulse" style="height: 70%;"></div>
+                        <div class="skeleton-bar skeleton-pulse" style="height: 35%;"></div>
+                        <div class="skeleton-bar skeleton-pulse" style="height: 55%;"></div>
+                        <div class="skeleton-bar skeleton-pulse" style="height: 80%;"></div>
+                        <div class="skeleton-bar skeleton-pulse" style="height: 40%;"></div>
+                        <div class="skeleton-bar skeleton-pulse" style="height: 60%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasSidebar" aria-labelledby="offcanvasSidebarLabel">
+        <!-- Offcanvas Modern Card-Based Header & Tabs -->
+        <div class="sidebar-header-wrapper bg-white shadow-xs">
+            <!-- Zone 1: Main Header & Actions -->
+            <div class="sidebar-header-top d-flex align-items-center justify-content-between px-3 pt-3 pb-2.5 border-bottom">
+                <div class="d-flex align-items-center gap-2.5">
+                    <div class="sidebar-brand-icon d-flex align-items-center justify-content-center">
+                        <i class="bi bi-sliders2-vertical"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-1.5">
+                            <h6 class="offcanvas-title mb-0 fw-bold text-slate-800" id="offcanvasSidebarLabel" style="font-size: 13.5px; letter-spacing: -0.01em;">Chart Studio</h6>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-1.5 py-0.5 rounded-pill fw-semibold text-2xs">PRO</span>
+                        </div>
+                        <span id="offcanvasSidebarSubLabel" class="text-slate-500 fw-medium d-block text-2xs" style="margin-top: 1px;">Design & Formatting</span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                    <button type="button" class="btn btn-xs btn-ghost text-slate-500 hover:text-slate-800 rounded-2 p-1.5" id="btnToggleSidebarFullscreen" title="Toggle Fullscreen Width" aria-label="Toggle Fullscreen Width">
+                        <i class="bi bi-arrows-angle-expand" id="sidebarExpandIcon"></i>
+                    </button>
+                    <button type="button" class="btn-close text-reset ms-1" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                </div>
+            </div>
+
+            <!-- Zone 2: Segmented Quick Tabs Navigation Bar -->
+            <div class="sidebar-tabs-bar px-3 py-2 bg-slate-50 border-bottom">
+                <div class="sidebar-segmented-tabs d-flex gap-1 p-1 bg-slate-200/70 rounded-3 overflow-x-auto scrollbar-none" style="white-space: nowrap;">
+                    <button class="btn btn-xs active rounded-2 px-2.5 py-1 sidebar-tab-btn" data-target-content="chartSettingsContent">
+                        <i class="bi bi-bar-chart me-1"></i>Designer
+                    </button>
+                    <button class="btn btn-xs rounded-2 px-2.5 py-1 sidebar-tab-btn" data-target-content="chartFormattingContent">
+                        <i class="bi bi-brush me-1"></i>Style
+                    </button>
+                    <button class="btn btn-xs rounded-2 px-2.5 py-1 sidebar-tab-btn" data-target-content="chartEffectsContent">
+                        <i class="bi bi-magic me-1"></i>Effects
+                    </button>
+                    <button class="btn btn-xs rounded-2 px-2.5 py-1 sidebar-tab-btn" data-target-content="dataContent">
+                        <i class="bi bi-database me-1"></i>Data
+                    </button>
+                    <button class="btn btn-xs rounded-2 px-2.5 py-1 sidebar-tab-btn" data-target-content="kpiBuilderContent">
+                        <i class="bi bi-patch-check me-1"></i>KPIs
+                    </button>
+                    <button class="btn btn-xs rounded-2 px-2.5 py-1 sidebar-tab-btn" data-target-content="templateGalleryContent">
+                        <i class="bi bi-grid-1x2-fill me-1"></i>Templates
+                    </button>
+                </div>
+            </div>
+
+            <!-- Zone 3: Instant Search & Accordion Batch Controls Bar -->
+            <div class="sidebar-search-bar px-3 py-2 bg-white border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="sidebar-search-box position-relative flex-grow-1">
+                        <i class="bi bi-search position-absolute text-slate-500 search-icon" style="left: 10px; top: 8px; font-size: 12px;"></i>
+                        <input type="text" id="sidebarQuickSearchInput" class="form-control form-control-sm ps-4 pe-4 bg-white border-slate-300 text-xs rounded-2 fw-medium text-slate-800 shadow-none" placeholder="Search controls & categories..." aria-label="Search controls & categories" autocomplete="off">
+                        <button type="button" id="clearSidebarSearchBtn" class="btn btn-link btn-xs p-0 text-slate-400 hover:text-slate-600 position-absolute" style="right: 8px; top: 7px; display: none;" title="Clear search">
+                            <i class="bi bi-x-circle-fill" style="font-size: 13px;"></i>
+                        </button>
+                    </div>
+                    <button type="button" id="btnToggleAllAccordions" class="btn btn-xs btn-outline-secondary d-flex align-items-center gap-1 rounded-2 px-2 py-1.5 text-2xs fw-semibold" title="Toggle Expand/Collapse All Accordions" aria-label="Toggle Expand/Collapse All Accordions" style="height: 31px; white-space: nowrap;">
+                        <i class="bi bi-arrows-collapse" id="toggleAccordionsIcon"></i>
+                        <span class="d-none d-sm-inline" id="toggleAccordionsText">Collapse</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="offcanvas-body p-3">
+            
+            <!-- Dynamic Sidebar Containers -->
+            <div id="chartSettingsContent" class="offcanvas-content" style="display: none;"></div>
+            <div id="kpiBuilderContent" class="offcanvas-content" style="display: none;"></div>
+            <div id="templateGalleryContent" class="offcanvas-content" style="display: none;"></div>
+            <div id="templateCustomizerContent" class="offcanvas-content" style="display: none;"></div>
+            <div id="additionalActionsContent" class="offcanvas-content" style="display: none;"></div>
+            <div id="filterSortContent" class="offcanvas-content" style="display: none;"></div>
+            <div id="dashboardViewContent" class="offcanvas-content" style="display: none;"></div>
+            <div id="chartFormattingContent" class="offcanvas-content" style="display: none;"></div>
+            <div id="chartEffectsContent" class="offcanvas-content" style="display: none;"></div>
+            <div id="textboxContent" class="offcanvas-content" style="display: none;"></div>
+            <div id="dashboardThemeContent" class="offcanvas-content" style="display: none;"></div>
+            <div id="userInfoContent" class="offcanvas-content" style="display: none;"></div>
+            <div id="advancedSettingsContent" class="offcanvas-content" style="display: none;"></div>
+            <div id="dataContent" class="offcanvas-content" style="display: none;"></div>
+
+        </div>
+    </div>
+        
+        <main id="mainContent" class="container-fluid main-content-container py-4 flex-grow-1" role="main">
+            <div id="dashboardSection" class="content-section active">
+                <div id="visualizationsSection" class="section-card p-0 border-0 bg-transparent shadow-none">
+                    <div id="dashboardContent" class="position-relative" style="min-height: 500px; padding: 4px;">
+                        <div class="no-charts-message text-muted text-center p-4">
+                            <p><i class="bi bi-info-circle"></i> <span data-i18n="dashboard.noCharts">No charts available.</span></p>
+                            <p data-i18n="dashboard.addChartsHint">Add charts from Chart Settings in the sidebar.</p>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Multi-Dashboard Tab Bar (Power BI / Excel Style) -->
+                    <div id="multiDashboardPanel" class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-2 pb-1 px-2 border-top bg-light-subtle rounded-bottom mt-2">
+                        <div class="dashboard-tabs-scroll-wrapper d-flex align-items-center gap-1.5 overflow-x-auto" id="dashboardTabsList" style="scrollbar-width: thin;">
+                            <!-- Dynamically populated tab pills -->
+                        </div>
+                        <div class="d-flex align-items-center gap-1 ms-auto">
+                            <button id="btnCreateDashboard" class="btn btn-xs btn-outline-primary rounded-circle p-1 d-flex align-items-center justify-content-center" style="width: 26px; height: 26px;" title="New Page (+)" aria-label="New Page">
+                                <i class="bi bi-plus-lg"></i>
+                            </button>
+                            <button id="btnRenameDashboard" class="btn btn-xs btn-outline-secondary rounded-circle p-1 d-flex align-items-center justify-content-center" style="width: 26px; height: 26px;" title="Rename Active Tab" aria-label="Rename Tab">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button id="btnDeleteDashboard" class="btn btn-xs btn-outline-danger rounded-circle p-1 d-flex align-items-center justify-content-center" style="width: 26px; height: 26px;" title="Delete Active Tab" aria-label="Delete Tab">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                            <button id="btnToggleFullDashboardPanel" class="btn btn-xs btn-outline-secondary rounded-circle p-1 d-flex align-items-center justify-content-center" style="width: 26px; height: 26px;" title="Full Dashboard View (Hide Menus & Table)" aria-label="Full Dashboard View">
+                                <i class="bi bi-arrows-fullscreen"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div id="dataTableSection" class="section-card">
+                    <!-- Active Filter Chips Bar -->
+                    <div id="activeFiltersContainer" class="d-none align-items-center flex-wrap gap-2 mb-3 p-2.5 rounded border">
+                        <span class="text-secondary small fw-bold me-1 d-flex align-items-center gap-1" style="font-size: 0.78rem;">
+                            <i class="bi bi-funnel-fill text-primary"></i> <span data-i18n="dashboard.activeFilters">Active Filters:</span>
+                        </span>
+                        <div id="activeFiltersChips" class="d-flex flex-wrap gap-1.5 align-items-center">
+                            <!-- Clickable chips will be injected here dynamically -->
+                        </div>
+                    </div>
+                   
+                    <div class="table-responsive border-0">
+                        <div id="dataTableContainer">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="dataInsertSidebar" aria-labelledby="dataInsertSidebarLabel" style="width: 450px; z-index: 1055;">
+        <div class="offcanvas-header bg-primary text-white">
+            <h5 class="offcanvas-title" id="dataInsertSidebarLabel"><i class="bi bi-database-fill me-2"></i> Live Data Insertion</h5>
+            <button type="button" class="btn-close btn-close-white" id="closeDataSidebarBtn" aria-label="Close" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body d-flex flex-column">
+            <p class="text-muted small">Select specific <strong>Data Rows</strong> to insert into textboxes. (Showing first 50 rows of filtered data)</p>
+            
+            <div id="dataListContainer" class="flex-grow-1 overflow-auto p-2 border rounded mb-3 bg-light" style="max-height: 80%;">
+                <p class="text-center text-muted p-5">Loading data...</p>
+            </div>
+
+            <button id="insertSelectedDataBtn" class="btn btn-success w-100 mt-auto">
+                <i class="bi bi-box-arrow-in-down me-2"></i> Insert Selected Data Rows
+            </button>
+        </div>
+    </div>
+    <div id="luckysheetSection" class="luckysheet-section" style="display: none;">
+        <div id="luckysheet-container"></div>
+        <div class="d-flex justify-content-end p-2 border-top bg-light">
+            <button id="saveLuckysheetData" class="btn btn-success me-2"><i class="bi bi-save"></i> Save Data</button>
+            <button id="closeLuckysheet" class="btn btn-secondary"><i class="bi bi-x-circle"></i> Close</button>
+        </div>
+    </div>
+
+    <div id="chatPopup" class="chat-popup">
+        <!-- Chat History & Sessions Sidebar (Active in Fullscreen, collapsible) -->
+        <aside id="chatSidebar" class="chat-sidebar">
+            <div class="chat-sidebar-top">
+                <button id="chatNewSessionBtn" class="chat-new-chat-btn" title="Start a fresh conversation">
+                    <i class="bi bi-plus-lg"></i>
+                    <span>New Chat</span>
+                </button>
+                <button id="chatSidebarCloseBtn" class="chat-sidebar-icon-btn d-lg-none" title="Close sidebar">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+            </div>
+            
+            <div class="chat-sidebar-search">
+                <i class="bi bi-search"></i>
+                <input type="text" id="chatSessionSearchInput" placeholder="Search chats..." autocomplete="off" />
+            </div>
+
+            <div class="chat-sidebar-sessions-wrapper">
+                <div class="chat-sidebar-section-title">Recent Conversations</div>
+                <div id="chatSessionsList" class="chat-sessions-list">
+                    <!-- Dynamic session items inserted here -->
+                </div>
+            </div>
+
+            <div class="chat-sidebar-footer">
+                <div class="chat-dataset-context-chip" id="chatDatasetContextBadge" title="Active dataset loaded in memory">
+                    <i class="bi bi-database-check text-emerald-500"></i>
+                    <span id="chatDatasetContextText">Dataset Connected</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Panel -->
+        <div class="chat-main-container">
+            <!-- Modern Clean Minimalist Header -->
+            <div class="chat-popup-header">
+                <div class="chat-header-identity">
+                    <button id="toggleChatSidebarBtn" class="chat-header-btn chat-sidebar-toggle-btn" title="Toggle chat history sidebar" aria-label="Toggle Sidebar">
+                        <i class="bi bi-layout-sidebar-inset"></i>
+                    </button>
+                    <div class="chat-header-avatar">
+                        <i class="bi bi-stars"></i>
+                        <span class="chat-online-status-dot"></span>
+                    </div>
+                    <div class="chat-header-meta">
+                        <span class="chat-header-title" id="currentChatSessionTitle">Vedra AI</span>
+                        <span class="chat-header-subtitle" id="chatModelStatus">Intelligence & Analytics Assistant</span>
+                    </div>
+                </div>
+
+                <div class="header-controls">
+                    <!-- Agent Mode Switch (Sleek Clean Pill) -->
+                    <div class="chat-mode-badge-wrap" id="agentModeToggleWrapper" title="Toggle AI Autonomous Actions Mode">
+                        <input class="form-check-input d-none" type="checkbox" id="toggleAgentMode">
+                        <label class="chat-mode-pill" for="toggleAgentMode" id="agentModePillLabel">
+                            <i class="bi bi-lightning-charge-fill"></i>
+                            <span id="agentModeBadge">Agent Mode</span>
+                        </label>
+                    </div>
+
+                    <button id="toggleTaskTrayBtn" class="chat-header-btn position-relative" title="Autonomous Multi-Task Queue & Workers" aria-label="Task Queue">
+                        <i class="bi bi-stack"></i>
+                        <span id="agentActiveTasksBadge" class="badge rounded-pill bg-primary d-none" style="font-size: 8px; padding: 2px 4px; position: absolute; top: 4px; right: 4px;">0</span>
+                    </button>
+                    <button id="toggleChatSpeechBtn" class="chat-header-btn" title="Toggle Voice Responses (ऑडियो उत्तर)" aria-label="Toggle Voice Response">
+                        <i class="bi bi-volume-up" id="chatSpeechIcon"></i>
+                    </button>
+                    <button id="exportChatHistoryBtn" class="chat-header-btn" title="Export conversation as text" aria-label="Export Chat">
+                        <i class="bi bi-download"></i>
+                    </button>
+                    <button id="clearChatBtn" class="chat-header-btn" title="Clear conversation" aria-label="Clear Chat">
+                        <i class="bi bi-trash3"></i>
+                    </button>
+                    <button id="toggleChatFullscreenBtn" class="chat-header-btn" title="Expand to fullscreen" aria-label="Toggle Fullscreen">
+                        <i class="bi bi-arrows-fullscreen" id="chatFullscreenIcon"></i>
+                    </button>
+                    <button id="closeChatBtn" class="chat-header-btn close-btn" title="Close" aria-label="Close Chat">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Agent Control Deck (Sleek horizontal command chips) -->
+            <div id="agentControlDeck" class="agent-control-deck d-none">
+                <div class="agent-chips-container">
+                    <button id="agentCmdMultiTaskPlan" class="agent-action-chip" style="background: #fdf2f8; border-color: #fbcfe8; color: #9d174d; font-weight: 600;" title="Multi-Task Planner: Divide complex prompts & execute task-by-task">
+                        <i class="bi bi-cpu-fill text-pink-600"></i> Multi-Task Planner
+                    </button>
+                    <button id="agentCmdAutoPilot" class="agent-action-chip" style="background: #eef2ff; border-color: #c7d2fe; color: #4338ca; font-weight: 600;" title="1-क्लिक ऑटो-डैशबोर्ड निर्माण (Smart Dashboard Auto-Pilot)">
+                        <i class="bi bi-lightning-charge-fill text-indigo-600"></i> Auto-Pilot Dashboard
+                    </button>
+                    <button id="agentCmdExecReport" class="agent-action-chip" style="background: #ecfdf5; border-color: #a7f3d0; color: #065f46; font-weight: 600;" title="वन-क्लिक एक्जीक्यूटिव रिपोर्ट एक्सपोर्ट (PDF/PPT)">
+                        <i class="bi bi-file-earmark-pdf-fill text-emerald-600"></i> Exec Report (PDF/PPT)
+                    </button>
+                    <button id="agentCmdCleanData" class="agent-action-chip" style="background: #fffbeb; border-color: #fde68a; color: #92400e; font-weight: 600;" title="ऑटोमैटिक डेटा क्लीनिंग (Data Quality Fixer)">
+                        <i class="bi bi-magic text-amber-600"></i> Clean Data
+                    </button>
+                    <button id="agentCmdKnowledgeBase" class="agent-action-chip" style="background: #f0fdf4; border-color: #86efac; color: #166534; font-weight: 600;" title="एजेंट नॉलेज बेस: 15+ फॉर्मूले, बिजनेस लॉजिक एवं लाइव डायनामिक मूल्यांकन">
+                        <i class="bi bi-journal-bookmark-fill text-emerald-600"></i> Knowledge Base (15+ ƒ(x))
+                    </button>
+                    <button id="agentCmdFormulaHandbook" class="agent-action-chip" style="background: #fdf4ff; border-color: #f0abfc; color: #86198f; font-weight: 600;" title="लर्निंग मेनू: 15 डायनामिक फॉर्मूले हैंडबुक व टेम्पलेट कार्ड प्रयोग">
+                        <i class="bi bi-mortarboard-fill text-fuchsia-600"></i> ƒ(x) Learning Formulas (15)
+                    </button>
+                    <button id="agentCmdWhatIf" class="agent-action-chip" style="background: #e0e7ff; border-color: #a5b4fc; color: #3730a3; font-weight: 600;" title="What-If संवेदनशीलता एवं परिदृश्य सिमुलेटर">
+                        <i class="bi bi-sliders2 text-indigo-700"></i> What-If
+                    </button>
+                    <button id="agentCmdRootCause" class="agent-action-chip" style="background: #fee2e2; border-color: #fca5a5; color: #991b1b; font-weight: 600;" title="रूट-कॉज़ डायग्नोस्टिक्स ('Why' Analysis)">
+                        <i class="bi bi-search text-rose-700"></i> Why Analysis
+                    </button>
+                    <button id="agentCmdCrossFilter" class="agent-action-chip" style="background: #e0f2fe; border-color: #bae6fd; color: #075985; font-weight: 600;" title="इंटरएक्टिव क्रॉस-फ़िल्टरिंग टॉगल">
+                        <i class="bi bi-link-45deg text-sky-700"></i> Cross-Filter
+                    </button>
+                    <button id="agentCmdBenchmark" class="agent-action-chip" style="background: #fff1f2; border-color: #fecdd3; color: #9f1239; font-weight: 600;" title="चार्ट टार्गेट बेंचमार्क लाइन जोड़ें">
+                        <i class="bi bi-bullseye text-rose-600"></i> Benchmark Line
+                    </button>
+                    <button id="agentCmdBoardMeeting" class="agent-action-chip" style="background: #f1f5f9; border-color: #cbd5e1; color: #0f172a; font-weight: 600;" title="फुलस्क्रीन बोर्ड मीटिंग प्रेजेंटेशन कियोस्क मोड">
+                        <i class="bi bi-easel2-fill text-slate-800"></i> Meeting Mode
+                    </button>
+                    <button id="agentCmdInventory" class="agent-action-chip" title="Inspect Dashboard Inventory (डैशबोर्ड में मौजूद सभी चार्ट व KPI)">
+                        <i class="bi bi-stack text-indigo-500"></i> Inventory
+                    </button>
+                    <button id="agentCmdStory" class="agent-action-chip" title="Auto Executive Summary & Story (डेटा स्टोरी)">
+                        <i class="bi bi-journal-text text-purple-500"></i> Story
+                    </button>
+                    <button id="agentCmdAnomaly" class="agent-action-chip" title="Anomaly & Outlier Detection (असंगति पहचान)">
+                        <i class="bi bi-shield-exclamation text-amber-600"></i> Anomalies
+                    </button>
+                    <button id="agentCmdFilter" class="agent-action-chip" title="Conversational Data Filter (नेचुरल लैंग्वेज फ़िल्टर)">
+                        <i class="bi bi-funnel text-teal-500"></i> NL Filter
+                    </button>
+                    <button id="agentCmdCalculate" class="agent-action-chip" title="AI Calculated Fields / Formula (कस्टम फॉर्मूला कॉलम)">
+                        <i class="bi bi-calculator text-emerald-600"></i> New Column
+                    </button>
+                    <button id="agentCmdForecast" class="agent-action-chip" title="Predictive Trend Forecasting (ट्रेंड फोरकास्टिंग)">
+                        <i class="bi bi-graph-up-arrow text-indigo-600"></i> Forecast
+                    </button>
+                    <button id="agentCmdTemplate" class="agent-action-chip" title="1-Click Industry Dashboard Builder (स्मार्ट उद्योग डैशबोर्ड)">
+                        <i class="bi bi-speedometer2 text-blue-600"></i> Dashboard
+                    </button>
+                    <button id="agentCmdChart" class="agent-action-chip" title="Create or edit visual chart">
+                        <i class="bi bi-graph-up text-blue-500"></i> Chart
+                    </button>
+                    <button id="agentCmdEffect" class="agent-action-chip" title="Apply visual styling effect">
+                        <i class="bi bi-magic text-emerald-500"></i> Effects
+                    </button>
+                    <button id="agentCmdTheme" class="agent-action-chip" title="Apply card theme color">
+                        <i class="bi bi-paint-bucket text-cyan-500"></i> Theme
+                    </button>
+                    <button id="agentCmdLayout" class="agent-action-chip" title="Rearrange dashboard grid">
+                        <i class="bi bi-grid-3x3-gap text-amber-500"></i> Grid
+                    </button>
+                    <button id="agentCmdData" class="agent-action-chip" title="Load sample dataset">
+                        <i class="bi bi-database text-rose-500"></i> Mock Data
+                    </button>
+                    <button id="agentCmdLive" class="agent-action-chip" title="Configure live polling">
+                        <i class="bi bi-clock-history text-indigo-500"></i> Live Poll
+                    </button>
+                    <button id="agentCmdTextbox" class="agent-action-chip" title="Add notes annotation">
+                        <i class="bi bi-fonts text-violet-500"></i> Notes
+                    </button>
+                    <button id="agentCmdExport" class="agent-action-chip" title="Export report or charts">
+                        <i class="bi bi-file-earmark-arrow-up text-slate-600"></i> Export
+                    </button>
+                </div>
+            </div>
+
+            <!-- Agent Multi-Tasking & Worker Pool Drawer -->
+            <div id="agentTaskTrayDrawer" class="agent-task-tray-drawer d-none p-3 border-bottom bg-slate-50 transition-all duration-200" style="background: #f8fafc; border-color: rgba(226, 232, 240, 0.8);">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-indigo-600 text-white rounded-circle p-1"><i class="bi bi-cpu-fill"></i></span>
+                        <span class="fw-bold small text-dark">Autonomous Multitasking Engine</span>
+                        <span class="badge rounded-pill bg-indigo-100 text-indigo-700 text-3xs font-semibold">Active Workers</span>
+                    </div>
+                    <button id="closeTaskTrayDrawerBtn" class="btn btn-xs btn-outline-secondary py-0 px-1" title="Close Tray">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                
+                <!-- Worker Metrics -->
+                <div class="row g-2 mb-2 text-center">
+                    <div class="col-4">
+                        <div class="p-1.5 rounded bg-white border border-slate-200 shadow-2xs">
+                            <div class="text-xs fw-bold text-indigo-600" id="trayMetricTasksCount">0</div>
+                            <div class="text-3xs text-muted">Tasks Executed</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-1.5 rounded bg-white border border-slate-200 shadow-2xs">
+                            <div class="text-xs fw-bold text-emerald-600" id="trayMetricSuccessRate">100%</div>
+                            <div class="text-3xs text-muted">Success Rate</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-1.5 rounded bg-white border border-slate-200 shadow-2xs">
+                            <div class="text-xs fw-bold text-slate-700" id="trayMetricAvgSpeed">0ms</div>
+                            <div class="text-3xs text-muted">Avg Latency</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Plans & Background Workers -->
+                <div id="trayActivePlansContainer" class="d-flex flex-column gap-1.5" style="max-height: 180px; overflow-y: auto;">
+                    <div class="text-xs text-muted text-center py-2" id="trayEmptyState">
+                        <i class="bi bi-check2-circle text-emerald-500 me-1"></i>Multitasking worker pool ready. Break down prompts and execute task-by-task.
+                    </div>
+                </div>
+
+                <!-- Quick Multitask Presets -->
+                <div class="pt-2 mt-2 border-top d-flex gap-1 justify-content-between">
+                    <button id="trayQuickAuditBtn" class="btn btn-2xs btn-outline-indigo w-50 text-truncate" title="Run Clean + 2 Charts + KPI concurrently">
+                        <i class="bi bi-lightning-charge me-1"></i>Parallel Audit
+                    </button>
+                    <button id="trayQuickReportBtn" class="btn btn-2xs btn-outline-emerald w-50 text-truncate" title="KPI + Anomaly + Forecast + Story">
+                        <i class="bi bi-file-earmark-bar-graph me-1"></i>Executive Suite
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Scroll Area -->
+            <div class="chat-popup-body">
+                <div id="chatHistory" class="chat-history">
+                    <!-- Clean Pure English Starter Welcome View -->
+                    <div class="chat-empty-welcome" id="chatWelcomeScreen">
+                        <div class="chat-welcome-avatar">
+                            <i class="bi bi-robot"></i>
+                        </div>
+                        <h3 class="chat-welcome-title">How can I assist your analysis today?</h3>
+                        <p class="chat-welcome-subtitle">Ask questions about your uploaded dataset, generate instant charts, or explore deeper data patterns.</p>
+                        
+                        <div class="chat-welcome-prompts-grid">
+                            <button type="button" class="chat-quick-prompt-btn" data-prompt="Generate an interactive chart visualizing the highest values and distribution in my dataset">
+                                <div class="quick-prompt-icon"><i class="bi bi-bar-chart-line-fill text-blue-500"></i></div>
+                                <div class="quick-prompt-text">
+                                    <span class="quick-prompt-label">Create Visual Chart</span>
+                                    <span class="quick-prompt-desc">Plot key categories and comparisons</span>
+                                </div>
+                            </button>
+                            <button type="button" class="chat-quick-prompt-btn" data-prompt="Provide a comprehensive statistical summary with key metrics, averages, and totals">
+                                <div class="quick-prompt-icon"><i class="bi bi-calculator-fill text-emerald-500"></i></div>
+                                <div class="quick-prompt-text">
+                                    <span class="quick-prompt-label">Executive Summary</span>
+                                    <span class="quick-prompt-desc">Totals, averages, and distributions</span>
+                                </div>
+                            </button>
+                            <button type="button" class="chat-quick-prompt-btn" data-prompt="Analyze this dataset for any anomalies, missing values, or unusual outliers">
+                                <div class="quick-prompt-icon"><i class="bi bi-search-heart-fill text-rose-500"></i></div>
+                                <div class="quick-prompt-text">
+                                    <span class="quick-prompt-label">Find Anomalies</span>
+                                    <span class="quick-prompt-desc">Detect data quality outliers & spikes</span>
+                                </div>
+                            </button>
+                            <button type="button" class="chat-quick-prompt-btn" data-prompt="Give me 3 actionable strategic recommendations derived from this data">
+                                <div class="quick-prompt-icon"><i class="bi bi-lightbulb-fill text-amber-500"></i></div>
+                                <div class="quick-prompt-text">
+                                    <span class="quick-prompt-label">Strategic Insights</span>
+                                    <span class="quick-prompt-desc">Actionable business takeaways</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Footer & Input Dock -->
+            <div class="chat-popup-footer">
+                <!-- Smart Context Memory Target Badge -->
+                <div id="chatFocusedChartChip" class="chat-focused-chart-chip d-none">
+                    <div class="d-flex align-items-center gap-1.5 overflow-hidden flex-grow-1">
+                        <i class="bi bi-bullseye text-primary"></i>
+                        <span class="text-slate-500 text-2xs fw-bold text-uppercase">Target:</span>
+                        <span class="text-truncate fw-bold text-slate-800 text-xs" id="chatFocusedChartTitle">Chart</span>
+                        <span class="badge bg-indigo-50 text-indigo-700 border border-indigo-200 text-2xs px-1.5 py-0.5 rounded-pill" id="chatFocusedChartType">bar</span>
+                    </div>
+                    <button type="button" class="btn btn-link btn-xs p-0 text-slate-400 hover:text-slate-700" id="btnClearFocusedTarget" title="Clear target chart focus">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </button>
+                </div>
+                <div class="chat-input-wrapper">
+                    <button id="chatVoiceInputBtn" class="chat-input-action-btn" title="Voice Input (Speech-to-Text)" aria-label="Voice Input">
+                        <i class="bi bi-mic"></i>
+                    </button>
+                    <textarea id="chatInput" class="chat-textarea" placeholder="Ask anything about your data... (Press Enter to send)" rows="1" maxlength="2000"></textarea>
+                    <button id="sendChatBtn" class="chat-send-btn" title="Send message (Enter)" aria-label="Send Message" disabled>
+                        <i class="bi bi-arrow-up-short"></i>
+                    </button>
+                </div>
+                <div class="chat-input-footer-sub">
+                    <span class="chat-status-note"><i class="bi bi-shield-check"></i> Real-time private data context</span>
+                    <span class="chat-char-count"><span id="charCount">0</span>/2000</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Analytics & Diagnostic Report Modal -->
+    <div class="modal fade" id="advancedAnalyticsModal" tabindex="-1" aria-labelledby="advancedAnalyticsModalLabel" aria-hidden="true"></div>
+
+    <div class="modal fade" id="codeEditorModal" tabindex="-1" aria-labelledby="codeEditorModalLabel" aria-hidden="true"></div>
+
+    <div class="modal fade" id="addDataModal" tabindex="-1" aria-labelledby="addDataModalLabel" aria-hidden="true"></div>
+    
+    <div class="modal fade" id="mainMenuModal" tabindex="-1" aria-labelledby="mainMenuModalLabel" aria-hidden="true"></div>
+    
+
+    <!-- Chart Annotation Modal -->
+    <div class="modal fade" id="chartAnnotationModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;"></div>
+
+    <!-- Hotkeys / Keyboard Shortcuts Cheat Sheet Modal -->
+    <div class="modal fade" id="hotkeysModal" tabindex="-1" aria-labelledby="hotkeysModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content shadow-lg border-0 rounded-4">
+                <div class="modal-header bg-slate-900 text-white py-3 px-4 rounded-top-4">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-keyboard-fill text-indigo-400 fs-4"></i>
+                        <h5 class="modal-title font-semibold mb-0" id="hotkeysModalLabel">Keyboard Shortcuts & Hotkeys Guide</h5>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 bg-light-subtle">
+                    <div class="row g-3">
+                        <!-- Navigation & Search -->
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-2xs p-3 rounded-3">
+                                <h6 class="font-bold text-slate-800 border-bottom pb-2 mb-3 d-flex align-items-center gap-2">
+                                    <i class="bi bi-search text-primary"></i> Navigation & Search
+                                </h6>
+                                <ul class="list-unstyled mb-0 d-flex flex-column gap-2 text-sm">
+                                    <li class="d-flex align-items-center justify-content-between">
+                                        <span class="text-slate-600">Command Palette</span>
+                                        <span><kbd class="bg-dark text-white px-2 py-1 rounded shadow-2xs">Ctrl + K</kbd> or <kbd class="bg-dark text-white px-2 py-1 rounded shadow-2xs">/</kbd></span>
+                                    </li>
+                                    <li class="d-flex align-items-center justify-content-between">
+                                        <span class="text-slate-600">Open Hotkeys Guide</span>
+                                        <span><kbd class="bg-dark text-white px-2 py-1 rounded shadow-2xs">?</kbd> or <kbd class="bg-dark text-white px-2 py-1 rounded shadow-2xs">Shift + /</kbd></span>
+                                    </li>
+                                    <li class="d-flex align-items-center justify-content-between">
+                                        <span class="text-slate-600">Close Modals / Overlays</span>
+                                        <span><kbd class="bg-dark text-white px-2 py-1 rounded shadow-2xs">Esc</kbd></span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Layout & Grid Control -->
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-2xs p-3 rounded-3">
+                                <h6 class="font-bold text-slate-800 border-bottom pb-2 mb-3 d-flex align-items-center gap-2">
+                                    <i class="bi bi-grid-3x3-gap-fill text-purple-600"></i> Dashboard Layout & Grid
+                                </h6>
+                                <ul class="list-unstyled mb-0 d-flex flex-column gap-2 text-sm">
+                                    <li class="d-flex align-items-center justify-content-between">
+                                        <span class="text-slate-600">Toggle Snap-to-Grid</span>
+                                        <span><kbd class="bg-dark text-white px-2 py-1 rounded shadow-2xs">Ctrl + G</kbd></span>
+                                    </li>
+                                    <li class="d-flex align-items-center justify-content-between">
+                                        <span class="text-slate-600">Lock / Unlock Layout</span>
+                                        <span><kbd class="bg-dark text-white px-2 py-1 rounded shadow-2xs">Ctrl + L</kbd></span>
+                                    </li>
+                                    <li class="d-flex align-items-center justify-content-between">
+                                        <span class="text-slate-600">Save Dashboard</span>
+                                        <span><kbd class="bg-dark text-white px-2 py-1 rounded shadow-2xs">Ctrl + S</kbd></span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Data & View Actions -->
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-2xs p-3 rounded-3">
+                                <h6 class="font-bold text-slate-800 border-bottom pb-2 mb-3 d-flex align-items-center gap-2">
+                                    <i class="bi bi-table text-teal-600"></i> Data Editor & Actions
+                                </h6>
+                                <ul class="list-unstyled mb-0 d-flex flex-column gap-2 text-sm">
+                                    <li class="d-flex align-items-center justify-content-between">
+                                        <span class="text-slate-600">Undo Data Edit</span>
+                                        <span><kbd class="bg-dark text-white px-2 py-1 rounded shadow-2xs">Ctrl + Z</kbd></span>
+                                    </li>
+                                    <li class="d-flex align-items-center justify-content-between">
+                                        <span class="text-slate-600">Redo Data Edit</span>
+                                        <span><kbd class="bg-dark text-white px-2 py-1 rounded shadow-2xs">Ctrl + Y</kbd></span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Presentation & Interactive Gestures -->
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-2xs p-3 rounded-3">
+                                <h6 class="font-bold text-slate-800 border-bottom pb-2 mb-3 d-flex align-items-center gap-2">
+                                    <i class="bi bi-projector-fill text-amber-500"></i> Gestures & Drag Interaction
+                                </h6>
+                                <ul class="list-unstyled mb-0 d-flex flex-column gap-2 text-sm">
+                                    <li class="d-flex align-items-center justify-content-between">
+                                        <span class="text-slate-600">Chart Drag (20px Grid Snap)</span>
+                                        <span class="text-xs text-muted fw-semibold">Card Grip <i class="bi bi-grip-vertical"></i></span>
+                                    </li>
+                                    <li class="d-flex align-items-center justify-content-between">
+                                        <span class="text-slate-600">Swap Cards</span>
+                                        <span class="text-xs text-muted fw-semibold">Drop over target card</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-white py-2.5 px-4 rounded-bottom-4 d-flex align-items-center justify-content-between">
+                    <span class="text-xs text-muted"><i class="bi bi-info-circle me-1"></i> Press <kbd class="bg-secondary text-white px-1.5 py-0.5 rounded text-2xs">?</kbd> or <kbd class="bg-secondary text-white px-1.5 py-0.5 rounded text-2xs">Shift + /</kbd> to open anytime.</span>
+                    <button type="button" class="btn btn-sm btn-dark px-3" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ai-advice-overlay"></div>
+    <div class="ai-advice-container">
+        <button id="closeAiAdviceBtn" aria-label="Close AI Advice">&times;</button>
+        <div id="aiAdviceContent">
+            </div>
+    </div>
+
+    <div id="openChatBtn" class="floating-chat-button" role="button" tabindex="0" aria-label="Open AI Assistant" title="Open AI Assistant">
+        <i class="bi bi-chat-dots-fill"></i>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" crossorigin="anonymous" onerror="window.handleCdnError(this, 'https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js')"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous" onerror="window.handleCdnError(this, 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js')"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@6.1.0/dist/echarts.min.js" crossorigin="anonymous" onerror="window.handleCdnError(this, 'https://cdnjs.cloudflare.com/ajax/libs/echarts/6.1.0/echarts.min.js')"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" crossorigin="anonymous" onerror="window.handleCdnError(this, 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js')"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts-gl@2.1.0/dist/echarts-gl.min.js" crossorigin="anonymous" onerror="window.handleCdnError(this, 'https://cdnjs.cloudflare.com/ajax/libs/echarts-gl/2.1.0/echarts-gl.min.js')"></script>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js" crossorigin="anonymous" onerror="window.handleCdnError(this, 'https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.32.0/plotly.min.js')"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" crossorigin="anonymous" onerror="window.handleCdnError(this, 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js')"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" onerror="window.handleCdnError(this, 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js')"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" crossorigin="anonymous" onerror="window.handleCdnError(this, 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js" crossorigin="anonymous" onerror="window.handleCdnError(this, 'https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.23/dist/jspdf.plugin.autotable.min.js')"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js" crossorigin="anonymous" onerror="window.handleCdnError(this, 'https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.js')"></script>
+    <script src="https://cdn.jsdelivr.net/npm/showdown/dist/showdown.min.js" crossorigin="anonymous" onerror="window.handleCdnError(this, 'https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js')"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js" crossorigin="anonymous" onerror="window.handleCdnError(this, 'https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.min.js')"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js" crossorigin="anonymous" onerror="window.handleCdnError(this)"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js" crossorigin="anonymous" onerror="window.handleCdnError(this)"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js" crossorigin="anonymous" onerror="window.handleCdnError(this)"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js" crossorigin="anonymous" onerror="window.handleCdnError(this)"></script>
+    <script>
+        try {
+            if (typeof firebase !== 'undefined' && firebase.firestore && typeof firebase.firestore.setLogLevel === 'function') {
+                firebase.firestore.setLogLevel('silent');
+            }
+        } catch (_) {}
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@simonwep/pickr/dist/pickr.min.js" crossorigin="anonymous" onerror="window.handleCdnError(this)"></script>
+    <script type="module" src="src/js/main.ts"></script>
+</body>
+</html>

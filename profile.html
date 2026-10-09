@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vedra BI - Professional Profile & Workspace Settings</title>
+
+    <!-- Zero-FOUC Theme Pre-Initialization Engine (Synchronous Head Execution) -->
+    <script>
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('theme') || ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light');
+                const isDark = savedTheme === 'dark';
+                const root = document.documentElement;
+                if (isDark) {
+                    root.classList.add('dark-theme');
+                    root.classList.remove('silk-light-theme');
+                    root.setAttribute('data-bs-theme', 'dark');
+                    root.style.colorScheme = 'dark';
+                } else {
+                    root.classList.remove('dark-theme');
+                    root.classList.add('silk-light-theme');
+                    root.setAttribute('data-bs-theme', 'light');
+                    root.style.colorScheme = 'light';
+                }
+            } catch (e) {}
+        })();
+    </script>
+
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS & Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        :root {
+            --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --bg-body: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --emerald: #059669;
+            --amber: #d97706;
+            --ruby: #dc2626;
+            --purple: #7c3aed;
+        }
+
+        .dark-theme {
+            --bg-body: #0b0f19;
+            --card-bg: #111827;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #1f2937;
+            --primary: #3b82f6;
+            --primary-hover: #60a5fa;
+        }
+
+        body.profile-page-main {
+            font-family: var(--font-display);
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            transition: background-color 0.25s ease, color 0.25s ease;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .font-display { font-family: var(--font-display); }
+        .font-mono { font-family: var(--font-mono); }
+
+        /* Modern Executive Banner */
+        .executive-banner {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 800;
+            color: #ffffff;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+            flex-shrink: 0;
+        }
+
+        .profile-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+            transition: border-color 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .profile-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .nav-pills-custom .nav-link {
+            border-radius: 10px;
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 10px 18px;
+            font-size: 0.92rem;
+            transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+            border: 1px solid transparent;
+            background: var(--card-bg);
+        }
+        .nav-pills-custom .nav-link:hover {
+            color: var(--primary);
+            background: rgba(37, 99, 235, 0.06);
+        }
+        .nav-pills-custom .nav-link.active {
+            background-color: var(--primary);
+            color: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.22);
+        }
+
+        .tab-pane.fade {
+            transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: translateY(4px);
+        }
+        .tab-pane.fade.show {
+            transform: translateY(0);
+        }
+
+        .btn-accent-picker {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+            cursor: pointer;
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .btn-accent-picker:hover {
+            transform: scale(1.1);
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+    </style>
+</head>
+<body class="profile-page-main">
+
+    <!-- TOP NAVIGATION HEADER -->
+    <header class="sticky-top bg-body border-bottom py-2.5 px-3 px-md-4" style="z-index: 1020;">
+        <div class="container-fluid d-flex align-items-center justify-content-between">
+            <!-- Brand & Return Link -->
+            <div class="d-flex align-items-center gap-3">
+                <a href="index.html" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-2 fw-semibold" id="btnBackToDashboard" style="border-radius: 8px;">
+                    <i class="bi bi-arrow-left"></i>
+                    <span>Dashboard</span>
+                </a>
+                <div class="vr opacity-25 d-none d-sm-block"></div>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                        <i class="bi bi-bar-chart-fill fs-6"></i>
+                    </div>
+                    <span class="fw-bold font-display d-none d-md-inline" style="font-size: 1.05rem; letter-spacing: -0.3px;">
+                        Vedra BI <span class="badge bg-primary bg-opacity-10 text-primary ms-1" style="font-size: 0.65rem;">PRO</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Quick Controls -->
+            <div class="d-flex align-items-center gap-2">
+                <a href="privacy.html" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1.5 fw-semibold" style="border-radius: 8px;" title="Privacy Policy & Governance">
+                    <i class="bi bi-shield-check text-primary"></i>
+                    <span class="d-none d-md-inline" style="font-size: 0.82rem;">Privacy Policy</span>
+                </a>
+
+                <div class="d-none d-lg-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill bg-light border text-xs">
+                    <span class="status-dot"></span>
+                    <span class="fw-medium text-slate-700" style="font-size: 0.78rem;">TLS 1.3 Active</span>
+                </div>
+
+                <button id="btnThemeToggle" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1.5" style="border-radius: 8px;" title="Toggle Light/Dark Theme">
+                    <i class="bi bi-moon-stars-fill" id="themeToggleIcon"></i>
+                    <span class="d-none d-sm-inline" id="themeToggleText" style="font-size: 0.8rem;">Dark Mode</span>
+                </button>
+
+                <button id="btnLogoutAccount" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1" style="border-radius: 8px;" title="Sign out of account">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span class="d-none d-sm-inline" style="font-size: 0.8rem;">Sign Out</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- EXECUTIVE PROFILE HEADER -->
+    <section class="executive-banner py-4 py-md-5">
+        <div class="container">
+            <div class="row align-items-center g-4">
+                
+                <!-- User Avatar & Identity -->
+                <div class="col-lg-8">
+                    <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-3.5">
+                        <div class="profile-avatar" id="heroUserAvatar">A</div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                <h2 class="fw-bold mb-0 text-white font-display" id="heroUserName" style="font-size: 1.6rem; letter-spacing: -0.4px;">
+                                    Vedra Analyst Pro
+                                </h2>
+                                <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30 fw-bold px-2.5 py-1 rounded-pill" style="font-size: 0.7rem;">
+                                    <i class="bi bi-patch-check-fill me-1"></i> VERIFIED ANALYST
+                                </span>
+                                <span id="heroPlanBadge" class="badge bg-primary text-white fw-bold px-2.5 py-1 rounded-pill" style="font-size: 0.7rem;">
+                                    <i class="bi bi-star-fill text-warning me-1"></i> Pro Analyst
+                                </span>
+                            </div>
+
+                            <div class="d-flex flex-wrap align-items-center gap-3 text-white-50 small mb-2">
+                                <span class="font-monospace text-light" id="heroAccountId">@analyst_pro</span>
+                                <span>•</span>
+                                <span id="heroUserEmail">analyst@vedrabi.com</span>
+                                <span>•</span>
+                                <span class="d-inline-flex align-items-center gap-1">
+                                    <span class="status-dot"></span> Active Session
+                                </span>
+                            </div>
+
+                            <p class="text-white-50 small mb-0" id="heroUserBio" style="max-width: 600px; font-style: italic;">
+                                "Specialist in business intelligence, automated KPI reporting, and high-precision visual analytics."
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fast Actions & ID Copy -->
+                <div class="col-lg-4 text-lg-end">
+                    <div class="d-inline-flex flex-column gap-2 text-start p-3 rounded-3" style="background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); min-width: 260px;">
+                        <div class="d-flex align-items-center justify-content-between small text-white-50">
+                            <span>Account ID:</span>
+                            <button class="btn btn-xs btn-light py-0.5 px-2 fw-semibold" id="btnCopyAccountId" style="font-size: 0.75rem;">
+                                <i class="bi bi-clipboard me-1"></i> Copy
+                            </button>
+                        </div>
+                        <div class="font-monospace text-white fw-bold small text-truncate" id="cardPlanBadge">@analyst_pro</div>
+                        <div class="d-flex align-items-center justify-content-between pt-2 border-top border-white border-opacity-10 small text-white-50">
+                            <span>Security Guard:</span>
+                            <span class="text-success fw-semibold"><i class="bi bi-shield-lock-fill me-1"></i> SHA-256 Active</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- MAIN PROFILE DASHBOARD & DETAILS TABS -->
+    <main class="container py-4 py-md-5 profile-content-container flex-grow-1">
+        
+        <!-- Navigation Pills for Sections -->
+        <ul class="nav nav-pills nav-pills-custom mb-4 gap-2 flex-wrap" id="profileTabList" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active d-flex align-items-center gap-2" id="tab-identity-btn" data-bs-toggle="pill" data-bs-target="#tab-identity" type="button" role="tab">
+                    <i class="bi bi-person-vcard"></i> Identity & Profile
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link d-flex align-items-center gap-2" id="tab-security-btn" data-bs-toggle="pill" data-bs-target="#tab-security" type="button" role="tab">
+                    <i class="bi bi-shield-lock"></i> 8-Digit Security PIN
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link d-flex align-items-center gap-2" id="tab-onboarding-btn" data-bs-toggle="pill" data-bs-target="#tab-onboarding" type="button" role="tab">
+                    <i class="bi bi-compass"></i> Workplace Preferences
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link d-flex align-items-center gap-2" id="tab-subscription-btn" data-bs-toggle="pill" data-bs-target="#tab-subscription" type="button" role="tab">
+                    <i class="bi bi-gem"></i> Subscription Tier
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link d-flex align-items-center gap-2" id="tab-telemetry-btn" data-bs-toggle="pill" data-bs-target="#tab-telemetry" type="button" role="tab">
+                    <i class="bi bi-activity"></i> Telemetry & Metrics
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link d-flex align-items-center gap-2" id="tab-settings-btn" data-bs-toggle="pill" data-bs-target="#tab-settings" type="button" role="tab">
+                    <i class="bi bi-sliders"></i> Workspace & Data Control
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Contents -->
+        <div class="tab-content" id="profileTabContent">
+
+            <!-- TAB 1: IDENTITY & PROFILE -->
+            <div class="tab-pane fade show active" id="tab-identity" role="tabpanel">
+                <div class="row g-4">
+                    <div class="col-lg-7">
+                        <div class="profile-card p-4 mb-4">
+                            <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                                <i class="bi bi-person-fill-gear text-primary"></i> Edit Profile Information
+                            </h5>
+
+                            <div class="mb-3">
+                                <label for="editDisplayNameInput" class="form-label small fw-bold text-slate-700 mb-1">Full Display Name:</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="bi bi-person text-muted"></i></span>
+                                    <input type="text" id="editDisplayNameInput" class="form-control" placeholder="e.g. Jane Doe" style="border-radius: 0 8px 8px 0;">
+                                    <button class="btn btn-primary px-3 fw-semibold ms-2" id="btnSaveDisplayName" style="border-radius: 8px;">
+                                        <i class="bi bi-check-lg me-1"></i> Save Name
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label for="userBioInput" class="form-label small fw-bold text-slate-700 mb-0">Professional Summary / Bio:</label>
+                                    <span class="text-muted small" id="bioCharCount" style="font-size: 0.75rem;">0 / 200</span>
+                                </div>
+                                <textarea id="userBioInput" class="form-control" rows="3" maxlength="200" placeholder="Write a short summary about your analytics role..." style="border-radius: 8px;"></textarea>
+                                <div class="d-flex justify-content-end mt-2">
+                                    <button class="btn btn-primary btn-sm px-3 fw-semibold" id="btnSaveBio" style="border-radius: 8px;">
+                                        <i class="bi bi-check-lg me-1"></i> Save Bio
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Production Firebase Email Change Section -->
+                        <div class="profile-card p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                                    <i class="bi bi-envelope-at-fill text-primary"></i> Change Email Address (ईमेल बदलें)
+                                </h5>
+                                <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-2.5 py-1">Firebase Auth</span>
+                            </div>
+                            <p class="text-muted small mb-3">
+                                सुरक्षा कारणों से नया ईमेल अपडेट करने के लिए अपना वर्तमान पासवर्ड दर्ज करना अनिवार्य है।
+                                (Enter your new email and current password for identity re-authentication.)
+                            </p>
+
+                            <div id="emailChangeFeedback" class="d-none"></div>
+
+                            <div class="mb-3 p-2.5 bg-light rounded-3 border">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="small text-muted">Current Registered Email:</span>
+                                    <span class="fw-bold text-primary font-monospace small" id="currentEmailDisplay">analyst@vedrabi.com</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="inputNewUserEmail" class="form-label small fw-bold text-slate-700 mb-1">New Email Address (नया ईमेल पता):</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="bi bi-envelope text-muted"></i></span>
+                                    <input type="email" id="inputNewUserEmail" class="form-control" placeholder="new.email@company.com" style="border-radius: 0 8px 8px 0;">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="inputEmailChangePassword" class="form-label small fw-bold text-slate-700 mb-1">Current Password (वर्तमान पासवर्ड):</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="bi bi-lock text-muted"></i></span>
+                                    <input type="password" id="inputEmailChangePassword" class="form-control" placeholder="••••••••" style="border-radius: 0 8px 8px 0;">
+                                </div>
+                                <div class="form-text small text-muted" style="font-size: 0.75rem;">
+                                    <i class="bi bi-shield-lock me-1"></i> Re-authentication uses <code>EmailAuthProvider.credential</code>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end">
+                                <button class="btn btn-primary px-4 fw-bold d-flex align-items-center gap-2" id="btnChangeEmail" style="border-radius: 8px;">
+                                    <i class="bi bi-arrow-repeat"></i>
+                                    <span>Update Email Address</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-5">
+                        <div class="profile-card p-4">
+                            <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                                <i class="bi bi-award-fill text-warning"></i> Verification & Credentials
+                            </h5>
+
+                            <div class="d-flex flex-column gap-2.5">
+                                <div class="p-3 rounded-3 bg-light border d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-2.5">
+                                        <i class="bi bi-patch-check-fill text-primary fs-5"></i>
+                                        <div>
+                                            <div class="fw-bold small">Verified Email</div>
+                                            <div class="text-muted" style="font-size: 0.75rem;">Connected to enterprise tenant</div>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-success bg-opacity-10 text-success fw-bold">Active</span>
+                                </div>
+
+                                <div class="p-3 rounded-3 bg-light border d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-2.5">
+                                        <i class="bi bi-fingerprint text-info fs-5"></i>
+                                        <div>
+                                            <div class="fw-bold small">Unique Account Handle</div>
+                                            <div class="text-muted" style="font-size: 0.75rem;" id="modalAccountIdDisplay">@user_id</div>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary fw-bold">Verified</span>
+                                </div>
+
+                                <div class="p-3 rounded-3 bg-light border d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-2.5">
+                                        <i class="bi bi-shield-shaded text-success fs-5"></i>
+                                        <div>
+                                            <div class="fw-bold small">Zero-Knowledge Protection</div>
+                                            <div class="text-muted" style="font-size: 0.75rem;">Salted SHA-256 Storage</div>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-success bg-opacity-10 text-success fw-bold">100% Encrypted</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: SECURITY & 8-DIGIT PIN -->
+            <div class="tab-pane fade" id="tab-security" role="tabpanel">
+                <div class="row g-4">
+                    <div class="col-lg-7">
+                        <!-- Card 1: 8-Digit Security PIN -->
+                        <div class="profile-card p-4 mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                                    <i class="bi bi-key-fill text-primary"></i> Update 8-Digit Security PIN
+                                </h5>
+                                <span id="securityPinStatusBadge" class="badge bg-success bg-opacity-10 text-success fw-bold px-3 py-1.5">
+                                    <i class="bi bi-shield-check me-1"></i> Active
+                                </span>
+                            </div>
+
+                            <p class="text-muted small mb-3">
+                                Your 8-digit PIN is safeguarded via client-side cryptographic salts and SHA-256 hashing. It is required to authorize critical actions and new device sessions.
+                            </p>
+
+                            <div id="pinChangeFeedback" class="d-none"></div>
+
+                            <div class="mb-3">
+                                <label for="inputCurrentPin" class="form-label small fw-bold text-slate-700 mb-1">Current 8-Digit PIN:</label>
+                                <input type="password" id="inputCurrentPin" maxlength="8" class="form-control font-mono" placeholder="••••••••" style="border-radius: 8px; letter-spacing: 2px;">
+                            </div>
+
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-6">
+                                    <label for="inputNewPin" class="form-label small fw-bold text-slate-700 mb-1">New 8-Digit PIN:</label>
+                                    <input type="password" id="inputNewPin" maxlength="8" class="form-control font-mono" placeholder="8 characters" style="border-radius: 8px; letter-spacing: 2px;">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="inputConfirmPin" class="form-label small fw-bold text-slate-700 mb-1">Confirm New PIN:</label>
+                                    <input type="password" id="inputConfirmPin" maxlength="8" class="form-control font-mono" placeholder="Confirm 8 characters" style="border-radius: 8px; letter-spacing: 2px;">
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-3 mt-3 border-top">
+                                <button type="button" class="btn btn-outline-primary btn-sm fw-bold d-flex align-items-center gap-1.5" id="btnSendPinCardResetLink" style="border-radius: 8px;">
+                                    <i class="bi bi-envelope-arrow-up-fill"></i>
+                                    <span>Send Password Reset Link (पासवर्ड रीसेट लिंक भेजें)</span>
+                                </button>
+                                <button class="btn btn-primary px-4 fw-bold" id="btnSaveNewPin" style="border-radius: 8px;">
+                                    <i class="bi bi-shield-lock-fill me-1"></i> Update Security PIN
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Firebase Account Password Reset -->
+                        <div class="profile-card p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                                    <i class="bi bi-shield-lock text-primary"></i> Firebase Account Password (पासवर्ड रीसेट)
+                                </h5>
+                                <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-2.5 py-1">Firebase Auth</span>
+                            </div>
+                            <p class="text-muted small mb-3">
+                                अपने पंजीकृत ईमेल पर सीधे पासवर्ड रीसेट लिंक प्राप्त करें। ईमेल में दिए गए लिंक से आप नया पासवर्ड सेट कर सकते हैं।
+                                (Send an official Firebase password reset link directly to your registered email.)
+                            </p>
+
+                            <div id="passwordResetFeedback" class="d-none"></div>
+
+                            <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between p-3 bg-light rounded-3 border gap-2 mb-3">
+                                <div>
+                                    <div class="fw-bold small text-slate-700">Target Email: <span id="resetTargetEmailDisplay" class="font-monospace text-primary">analyst@vedrabi.com</span></div>
+                                    <div class="text-muted small" style="font-size: 0.78rem;">Sender: <code>noreply@inventory-fda05.firebaseapp.com</code></div>
+                                </div>
+                                <button class="btn btn-primary px-3 fw-bold d-flex align-items-center justify-content-center gap-2" id="btnSendProfileResetEmail" style="border-radius: 8px; white-space: nowrap;">
+                                    <i class="bi bi-envelope-paper-fill"></i>
+                                    <span>Send Reset Email</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-5">
+                        <div class="profile-card p-4 mb-3">
+                            <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                                <i class="bi bi-shield-check text-info"></i> Security Policy Overview
+                            </h5>
+
+                            <ul class="list-unstyled d-flex flex-column gap-2.5 text-muted small mb-0">
+                                <li class="d-flex align-items-start gap-2">
+                                    <i class="bi bi-check2-circle text-success fs-6 mt-0.5"></i>
+                                    <div><strong>Zero Plaintext Storage:</strong> Passwords and PINs are strictly one-way hashed.</div>
+                                </li>
+                                <li class="d-flex align-items-start gap-2">
+                                    <i class="bi bi-check2-circle text-success fs-6 mt-0.5"></i>
+                                    <div><strong>Unique Salt Per Account:</strong> 16-byte CSPRNG salts prevent rainbow table vulnerabilities.</div>
+                                </li>
+                                <li class="d-flex align-items-start gap-2">
+                                    <i class="bi bi-check2-circle text-success fs-6 mt-0.5"></i>
+                                    <div><strong>Account Handle:</strong> <span class="text-primary font-monospace fw-bold" id="securityAccountIdDisplay">@user_id</span></div>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Privacy Policy Link Card -->
+                        <div class="profile-card p-4" style="background: rgba(37, 99, 235, 0.03); border: 1px solid rgba(37, 99, 235, 0.2);">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <h6 class="fw-bold mb-0 text-primary d-flex align-items-center gap-2">
+                                    <i class="bi bi-file-earmark-lock"></i> Privacy Policy & Governance
+                                </h6>
+                                <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size: 0.65rem;">Enterprise</span>
+                            </div>
+                            <p class="text-muted small mb-3" style="font-size: 0.82rem; line-height: 1.45;">
+                                Read our full data governance charter regarding in-memory computation, zero model training, and customer data rights.
+                            </p>
+                            <a href="privacy.html" class="btn btn-sm btn-primary w-100 fw-semibold d-flex align-items-center justify-content-center gap-1.5" style="border-radius: 8px;">
+                                <i class="bi bi-arrow-right-circle"></i>
+                                <span>Read Privacy Policy</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: ONBOARDING PREFERENCES -->
+            <div class="tab-pane fade" id="tab-onboarding" role="tabpanel">
+                <div class="profile-card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-compass-fill text-primary"></i> Workplace & Analytics Context
+                        </h5>
+                        <span id="obStatusBadge" class="badge bg-success bg-opacity-10 text-success fw-bold">Configured</span>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6 col-lg-4">
+                            <div class="p-3 rounded-3 bg-light border">
+                                <div class="text-muted small fw-semibold">Preferred Language:</div>
+                                <div class="fw-bold fs-6 mt-1 text-primary" id="obLanguageDisplay">English</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-4">
+                            <div class="p-3 rounded-3 bg-light border">
+                                <div class="text-muted small fw-semibold">Professional Role:</div>
+                                <div class="fw-bold fs-6 mt-1 text-slate-800" id="obRolesDisplay">BI Analytics Lead</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-4">
+                            <div class="p-3 rounded-3 bg-light border">
+                                <div class="text-muted small fw-semibold">Primary Analytics Goals:</div>
+                                <div class="fw-bold fs-6 mt-1 text-slate-800" id="obGoalsDisplay">Interactive Dashboards, AI Insights</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-6">
+                            <div class="p-3 rounded-3 bg-light border">
+                                <div class="text-muted small fw-semibold">Team Collaboration Size:</div>
+                                <div class="fw-bold fs-6 mt-1 text-slate-800" id="obTeamDisplay">Small Team (2-10)</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-6">
+                            <div class="p-3 rounded-3 bg-light border">
+                                <div class="text-muted small fw-semibold">Data Refresh Cadence:</div>
+                                <div class="fw-bold fs-6 mt-1 text-slate-800" id="obFreqDisplay">Daily Refresh</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <a href="login.html?onboarding=true" class="btn btn-outline-primary fw-semibold px-4" style="border-radius: 8px;">
+                            <i class="bi bi-pencil-square me-1"></i> Update Workplace Setup
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: SUBSCRIPTION TIERS -->
+            <div class="tab-pane fade" id="tab-subscription" role="tabpanel">
+                <div class="row g-4">
+                    <!-- Plan 1: Basic Starter -->
+                    <div class="col-md-4">
+                        <div class="profile-card plan-tier-card p-4 h-100 d-flex flex-column justify-content-between" data-plan="Basic">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h5 class="fw-bold mb-0">Basic Starter</h5>
+                                    <span class="badge bg-secondary text-white">Free</span>
+                                </div>
+                                <div class="display-6 fw-bold mb-3 font-display">$0 <span class="fs-6 text-muted fw-normal">/ Always Free</span></div>
+                                <ul class="list-unstyled small text-muted d-flex flex-column gap-2 mb-4">
+                                    <li><i class="bi bi-check text-success me-1 fs-5"></i> Up to 10 Visuals per Dashboard</li>
+                                    <li><i class="bi bi-check text-success me-1 fs-5"></i> Standard Excel & CSV Imports</li>
+                                    <li><i class="bi bi-check text-success me-1 fs-5"></i> 8-Digit PIN Security</li>
+                                </ul>
+                            </div>
+                            <button class="btn btn-outline-primary w-100 fw-semibold py-2 btn-select-plan">Switch to Basic</button>
+                        </div>
+                    </div>
+
+                    <!-- Plan 2: Pro Analyst (Featured) -->
+                    <div class="col-md-4">
+                        <div class="profile-card plan-tier-card p-4 h-100 d-flex flex-column justify-content-between border-primary shadow-sm" data-plan="Pro">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h5 class="fw-bold mb-0 text-primary">Pro Analyst</h5>
+                                    <span class="badge bg-primary text-white">Most Popular</span>
+                                </div>
+                                <div class="display-6 fw-bold mb-3 font-display text-primary">$29 <span class="fs-6 text-muted fw-normal">/ month</span></div>
+                                <ul class="list-unstyled small text-muted d-flex flex-column gap-2 mb-4">
+                                    <li><i class="bi bi-check-lg text-primary me-1 fs-6"></i> <strong>Unlimited</strong> Visualizations & KPI Cards</li>
+                                    <li><i class="bi bi-check-lg text-primary me-1 fs-6"></i> DuckDB WASM In-Memory Acceleration</li>
+                                    <li><i class="bi bi-check-lg text-primary me-1 fs-6"></i> AI Insights & Automated Summaries</li>
+                                    <li><i class="bi bi-check-lg text-primary me-1 fs-6"></i> Executive PDF & PNG Exports</li>
+                                </ul>
+                            </div>
+                            <button class="btn btn-primary w-100 fw-bold py-2 btn-select-plan">Current Active Plan</button>
+                        </div>
+                    </div>
+
+                    <!-- Plan 3: Enterprise Leadership -->
+                    <div class="col-md-4">
+                        <div class="profile-card plan-tier-card p-4 h-100 d-flex flex-column justify-content-between" data-plan="Enterprise">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h5 class="fw-bold mb-0 text-danger">Enterprise</h5>
+                                    <span class="badge bg-danger text-white">Custom</span>
+                                </div>
+                                <div class="display-6 fw-bold mb-3 font-display">Custom <span class="fs-6 text-muted fw-normal">/ Team</span></div>
+                                <ul class="list-unstyled small text-muted d-flex flex-column gap-2 mb-4">
+                                    <li><i class="bi bi-check-lg text-danger me-1 fs-6"></i> Dedicated Cloud Data Pipeline</li>
+                                    <li><i class="bi bi-check-lg text-danger me-1 fs-6"></i> Custom SSO & Role-Based Access Control</li>
+                                    <li><i class="bi bi-check-lg text-danger me-1 fs-6"></i> 24/7 Priority Support & SLA</li>
+                                </ul>
+                            </div>
+                            <button class="btn btn-outline-primary w-100 fw-semibold py-2 btn-select-plan">Switch to Enterprise</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: TELEMETRY & METRICS -->
+            <div class="tab-pane fade" id="tab-telemetry" role="tabpanel">
+                <div class="row g-4">
+                    <div class="col-md-3">
+                        <div class="profile-card p-3 text-center">
+                            <div class="display-6 fw-bold text-primary font-display" id="statTotalCharts">6</div>
+                            <div class="text-muted small fw-semibold mt-1">Active Visualizations</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="profile-card p-3 text-center">
+                            <div class="display-6 fw-bold text-success font-display" id="statTotalRows">1,420</div>
+                            <div class="text-muted small fw-semibold mt-1">Dataset Records Processed</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="profile-card p-3 text-center">
+                            <div class="display-6 fw-bold text-warning font-display" id="statTotalAIQueries">18</div>
+                            <div class="text-muted small fw-semibold mt-1">AI Analytical Queries</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="profile-card p-3 text-center">
+                            <div class="mt-2" id="statDuckDBStatus">
+                                <span class="badge bg-success bg-opacity-10 text-success fw-bold fs-6">Active</span>
+                            </div>
+                            <div class="text-muted small fw-semibold mt-2">DuckDB WASM Engine</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: WORKSPACE SETTINGS & DATA MANAGEMENT -->
+            <div class="tab-pane fade" id="tab-settings" role="tabpanel">
+                <div class="row g-4">
+                    <!-- Theme & Accents -->
+                    <div class="col-lg-6">
+                        <div class="profile-card p-4 h-100">
+                            <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                                <i class="bi bi-palette-fill text-primary"></i> Theme Accent & Color Palette
+                            </h5>
+
+                            <div class="mb-4">
+                                <label class="form-label small fw-bold text-slate-700 mb-2">Workspace Accent Color:</label>
+                                <div class="d-flex align-items-center gap-3">
+                                    <button class="btn-accent-picker" data-accent="primary" style="background-color: #2563eb;" title="Royal Blue"></button>
+                                    <button class="btn-accent-picker" data-accent="emerald" style="background-color: #059669;" title="Emerald Green"></button>
+                                    <button class="btn-accent-picker" data-accent="ruby" style="background-color: #dc2626;" title="Ruby Red"></button>
+                                    <button class="btn-accent-picker" data-accent="amber" style="background-color: #d97706;" title="Amber Gold"></button>
+                                    <button class="btn-accent-picker" data-accent="purple" style="background-color: #7c3aed;" title="Purple Indigo"></button>
+                                    <button class="btn-accent-picker" data-accent="dark" style="background-color: #1e293b;" title="Onyx Dark"></button>
+                                </div>
+                            </div>
+
+                            <p class="text-muted small mb-0">
+                                Selecting an accent palette dynamically updates buttons, chart highlights, and focal accents across your dashboard.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Data Backup, Restore & Reset -->
+                    <div class="col-lg-6">
+                        <div class="profile-card p-4 h-100">
+                            <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                                <i class="bi bi-cloud-arrow-down-fill text-info"></i> Backup, Restore & Data Reset
+                            </h5>
+
+                            <div class="d-flex flex-column gap-2.5">
+                                <button id="btnExportFullBackup" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-between py-2.5 fw-semibold" style="border-radius: 8px;">
+                                    <span><i class="bi bi-download text-primary me-2"></i> Download Full Workspace Backup (.json)</span>
+                                    <i class="bi bi-file-earmark-arrow-down"></i>
+                                </button>
+
+                                <button class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-between py-2.5 fw-semibold" style="border-radius: 8px;" onclick="document.getElementById('restoreFileInput').click();">
+                                    <span><i class="bi bi-upload text-success me-2"></i> Restore Backup File (Import .json)</span>
+                                    <i class="bi bi-file-earmark-arrow-up"></i>
+                                </button>
+                                <input type="file" id="restoreFileInput" class="d-none" accept=".json">
+
+                                <button id="btnResetAllData" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-between py-2.5 fw-semibold" style="border-radius: 8px;">
+                                    <span><i class="bi bi-trash3 text-danger me-2"></i> Clear Local Cache & Reset Data</span>
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="mt-auto py-4 border-top bg-body text-center text-muted small">
+        <div class="container d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2">
+            <div>&copy; 2026 Vedra BI Analytics Platform. All rights reserved.</div>
+            <div class="d-flex gap-3">
+                <a href="index.html" class="text-decoration-none text-muted">Dashboard</a>
+                <a href="login.html" class="text-decoration-none text-muted">Sign In</a>
+                <a href="privacy.html" class="text-decoration-none text-muted">Privacy Policy</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Profile Page TypeScript Module Entry -->
+    <script type="module" src="/src/js/profile/profilePage.ts"></script>
+
+</body>
+</html>

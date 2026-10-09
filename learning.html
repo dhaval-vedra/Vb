@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vedra BI - Learning Center & Formula Handbook</title>
+    <meta name="description" content="Official technical reference manual for Vedra BI: all 15 dynamic formulas, spreadsheet grid, chart generation, rich textnotes, dashboard layouts, and icon navigation.">
+
+    <!-- Zero-FOUC Theme Pre-Initialization Engine -->
+    <script>
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('theme') || ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light');
+                const isDark = savedTheme === 'dark';
+                const root = document.documentElement;
+                if (isDark) {
+                    root.classList.add('dark-theme');
+                    root.classList.remove('silk-light-theme');
+                    root.setAttribute('data-bs-theme', 'dark');
+                    root.style.colorScheme = 'dark';
+                } else {
+                    root.classList.remove('dark-theme');
+                    root.classList.add('silk-light-theme');
+                    root.setAttribute('data-bs-theme', 'light');
+                    root.style.colorScheme = 'light';
+                }
+            } catch (e) {}
+        })();
+    </script>
+
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS & Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        :root {
+            --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --bg-body: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --emerald: #059669;
+            --amber: #d97706;
+            --ruby: #dc2626;
+            --purple: #7c3aed;
+        }
+
+        .dark-theme {
+            --bg-body: #0b0f19;
+            --card-bg: #111827;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #1f2937;
+            --primary: #3b82f6;
+            --primary-hover: #60a5fa;
+            --emerald: #10b981;
+            --amber: #f59e0b;
+            --ruby: #ef4444;
+            --purple: #8b5cf6;
+        }
+
+        body {
+            font-family: var(--font-display);
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            line-height: 1.6;
+            scroll-behavior: smooth;
+        }
+
+        code, pre, .font-mono {
+            font-family: var(--font-mono) !important;
+        }
+
+        /* Top Header Navbar */
+        .learn-topbar {
+            position: sticky;
+            top: 0;
+            z-index: 1040;
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .dark-theme .learn-topbar {
+            background: rgba(17, 24, 39, 0.94);
+            border-bottom-color: var(--border-color);
+        }
+
+        /* Sidebar Navigation */
+        .learn-sidebar {
+            position: sticky;
+            top: 65px;
+            height: calc(100vh - 65px);
+            overflow-y: auto;
+            border-right: 1px solid var(--border-color);
+            padding: 20px 16px;
+        }
+
+        .sidebar-section-title {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin: 16px 8px 8px;
+        }
+
+        .nav-item-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 7px 12px;
+            font-size: 0.86rem;
+            color: var(--text-main);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.15s ease;
+        }
+
+        .nav-item-link:hover {
+            background-color: rgba(37, 99, 235, 0.08);
+            color: var(--primary);
+            transform: translateX(3px);
+        }
+
+        .dark-theme .nav-item-link:hover {
+            background-color: rgba(59, 130, 246, 0.15);
+            color: #93c5fd;
+        }
+
+        .nav-item-link.active {
+            background-color: var(--primary);
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        /* Content Area Cards */
+        .learn-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .learn-card:hover {
+            border-color: rgba(37, 99, 235, 0.35);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Formula Card Styling */
+        .formula-card {
+            border-left: 4px solid var(--primary);
+        }
+
+        .formula-badge {
+            font-size: 0.72rem;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
+        .formula-syntax-box {
+            background-color: #0f172a;
+            color: #38bdf8;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 0.88rem;
+            margin: 12px 0;
+            overflow-x: auto;
+        }
+
+        .dark-theme .formula-syntax-box {
+            background-color: #030712;
+            border: 1px solid #1f2937;
+        }
+
+        .copy-formula-btn {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            background: rgba(255, 255, 255, 0.18);
+            border: none;
+            color: #ffffff;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .copy-formula-btn:hover {
+            background: rgba(255, 255, 255, 0.32);
+        }
+
+        /* Interactive Sandbox */
+        .sandbox-container {
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            background-color: var(--card-bg);
+            padding: 20px;
+        }
+
+        .sandbox-table th {
+            background: #f1f5f9;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #475569;
+        }
+
+        .dark-theme .sandbox-table th {
+            background: #1e293b;
+            color: #94a3b8;
+        }
+
+        .sandbox-table td {
+            font-size: 0.84rem;
+            vertical-align: middle;
+        }
+
+        .sandbox-editable-cell {
+            outline: none;
+            cursor: text;
+            padding: 3px 6px;
+            border-radius: 4px;
+            transition: background-color 0.15s;
+            border: 1px dashed transparent;
+        }
+
+        .sandbox-editable-cell:hover {
+            border-color: var(--primary);
+        }
+
+        .sandbox-editable-cell:focus {
+            background-color: #e0f2fe;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(37,99,235,0.25);
+        }
+
+        .dark-theme .sandbox-editable-cell:focus {
+            background-color: #1e3a8a;
+            color: #ffffff;
+        }
+
+        /* Step Process Flow Items */
+        .process-step {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .process-step-num {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+            font-size: 0.95rem;
+        }
+
+        /* Icon catalog pill */
+        .icon-catalog-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            transition: transform 0.15s, border-color 0.15s;
+        }
+
+        .icon-catalog-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+        }
+
+        .icon-box {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        /* Back to top floating button */
+        .back-to-top {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: opacity 0.2s, transform 0.2s;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .back-to-top.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .back-to-top:hover {
+            transform: translateY(-3px);
+        }
+
+        /* Clipboard Toast */
+        .copy-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #0f172a;
+            color: #ffffff;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.2s ease;
+            z-index: 1100;
+        }
+
+        .copy-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation Bar -->
+    <header class="learn-topbar py-2 px-3 px-md-4">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-3">
+                <a href="index.html" class="d-flex align-items-center gap-2 text-decoration-none text-reset">
+                    <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; box-shadow: 0 4px 10px rgba(37,99,235,0.3);">
+                        <i class="bi bi-mortarboard-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h1 class="h6 mb-0 fw-bold" style="font-size: 1rem; letter-spacing: -0.01em;" data-i18n="academyTitle">Vedra BI Academy</h1>
+                        <span class="text-muted" style="font-size: 0.72rem;" data-i18n="academySubtitle">Complete Learning Center & Formula Handbook</span>
+                    </div>
+                </a>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle d-none d-sm-inline-block" data-i18n="versionBadge">v1.2.0 Official Handbook</span>
+            </div>
+
+            <!-- Global Search Filter Input -->
+            <div class="flex-grow-1 mx-2 mx-md-4" style="max-width: 400px;">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" id="globalGuideSearch" class="form-control border-start-0" placeholder="Search formulas, charts, features, or shortcuts (Ctrl+K)..." aria-label="Search Handbook">
+                    <button class="btn btn-outline-secondary d-none d-md-block" type="button" data-i18n="clearBtn" onclick="const s = document.getElementById('globalGuideSearch'); if (s) { s.value=''; s.dispatchEvent(new Event('input')); }">Clear</button>
+                </div>
+            </div>
+
+            <!-- Language Switcher & Quick Actions -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Pure Language Switcher Toggle (100% English vs 100% Hindi) -->
+                <div class="btn-group btn-group-sm" role="group" id="langSwitchGroup" aria-label="Select Language">
+                    <button type="button" class="btn btn-sm btn-primary active fw-bold" id="btnLangEn" onclick="if (window.setHandbookLanguage) window.setHandbookLanguage('en');">
+                        <span>🇬🇧 English</span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnLangHi" onclick="if (window.setHandbookLanguage) window.setHandbookLanguage('hi');">
+                        <span>🇮🇳 हिन्दी</span>
+                    </button>
+                </div>
+
+                <!-- Theme Toggle Button -->
+                <button id="themeToggleBtn" class="btn btn-sm btn-outline-secondary" title="Toggle Theme" aria-label="Toggle Theme">
+                    <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+                </button>
+
+                <!-- Navigation Shortcuts -->
+                <a href="#sandboxSection" class="btn btn-sm btn-outline-primary d-none d-lg-inline-flex align-items-center gap-1">
+                    <i class="bi bi-play-circle-fill"></i> <span data-i18n="liveSandboxBtn">Live Sandbox</span>
+                </a>
+                <a href="edit_data.html" class="btn btn-sm btn-outline-secondary d-none d-md-inline-flex align-items-center gap-1" title="Open Excel Sheet Data Grid">
+                    <i class="bi bi-table"></i> <span data-i18n="editSheetBtn">Edit Sheet</span>
+                </a>
+                <a href="index.html" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-arrow-left-circle"></i> <span data-i18n="dashboardBtn">Dashboard</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Left Sticky Sidebar Navigation -->
+            <aside class="col-lg-3 col-xl-2 d-none d-lg-block learn-sidebar">
+                <div class="sidebar-section-title" data-i18n="navGettingStarted">Getting Started</div>
+                <a href="#overviewSection" class="nav-item-link active"><i class="bi bi-stars text-primary"></i> <span data-i18n="navOverview">1. Overview & Architecture</span></a>
+                <a href="#workflowMapSection" class="nav-item-link"><i class="bi bi-diagram-3-fill text-indigo-500"></i> <span data-i18n="navWorkflow">2. End-to-End Workflow</span></a>
+
+                <div class="sidebar-section-title" data-i18n="navCoreFormulas">Core Formulas (All 15)</div>
+                <a href="#formulasOverview" class="nav-item-link"><i class="bi bi-lightning-charge-fill text-amber-500"></i> <span data-i18n="navFormulasOverview">Formulas Master Guide</span></a>
+                <a href="#formula-insert" class="nav-item-link"><code class="text-primary">=INSERT</code> Cell Reference</a>
+                <a href="#formula-sum" class="nav-item-link"><code class="text-success">=SUM</code> Column / Range</a>
+                <a href="#formula-avg" class="nav-item-link"><code class="text-info">=AVG</code> Average Mean</a>
+                <a href="#formula-max" class="nav-item-link"><code class="text-danger">=MAX</code> Peak Value</a>
+                <a href="#formula-min" class="nav-item-link"><code class="text-secondary">=MIN</code> Lowest Value</a>
+                <a href="#formula-count" class="nav-item-link"><code class="text-primary">=COUNT</code> Row Count</a>
+                <a href="#formula-growth" class="nav-item-link"><code class="text-success">=GROWTH</code> MoM / YoY %</a>
+                <a href="#formula-diff" class="nav-item-link"><code class="text-warning">=DIFF</code> Variance Delta</a>
+                <a href="#formula-percent" class="nav-item-link"><code class="text-primary">=PERCENT</code> Gauge Metric</a>
+                <a href="#formula-remaining" class="nav-item-link"><code class="text-danger">=REMAINING</code> Goal Gap</a>
+                <a href="#formula-status" class="nav-item-link"><code class="text-success">=STATUS</code> Alert Badge</a>
+                <a href="#formula-if" class="nav-item-link"><code class="text-info">=IF</code> Conditional Logic</a>
+                <a href="#formula-latest" class="nav-item-link"><code class="text-purple">=LATEST</code> Stream Row</a>
+                <a href="#formula-top" class="nav-item-link"><code class="text-warning">=TOP</code> Leader Rank</a>
+                <a href="#formula-format" class="nav-item-link"><code class="text-success">=FORMAT</code> Currency & Number</a>
+
+                <div class="sidebar-section-title" data-i18n="navInteractiveTool">Interactive Tool</div>
+                <a href="#sandboxSection" class="nav-item-link"><i class="bi bi-terminal-dash text-primary"></i> <span data-i18n="navSandbox">Live Formula Sandbox</span></a>
+
+                <div class="sidebar-section-title" data-i18n="navStepByStep">Step-by-Step Learning</div>
+                <a href="#dataUploadSection" class="nav-item-link"><i class="bi bi-file-earmark-arrow-up text-primary"></i> <span data-i18n="navDataUpload">1. Data Ingestion & Upload</span></a>
+                <a href="#spreadsheetGridSection" class="nav-item-link"><i class="bi bi-grid-3x3 text-success"></i> <span data-i18n="navSpreadsheet">2. Spreadsheet Explorer</span></a>
+                <a href="#chartCreationSection" class="nav-item-link"><i class="bi bi-bar-chart-line-fill text-warning"></i> <span data-i18n="navCharts">3. Chart Creation (15+ types)</span></a>
+                <a href="#textboxSection" class="nav-item-link"><i class="bi bi-textarea-t text-info"></i> <span data-i18n="navTextboxes">4. Textboxes & Notes</span></a>
+                <a href="#dashboardLayoutSection" class="nav-item-link"><i class="bi bi-layout-wtf text-purple"></i> <span data-i18n="navDashboard">5. Dashboard Grid Canvas</span></a>
+                <a href="#menuNavigationSection" class="nav-item-link"><i class="bi bi-compass text-danger"></i> <span data-i18n="navMenuGuide">6. Menu & Icon Guide</span></a>
+                <a href="#enterpriseFeaturesSection" class="nav-item-link"><i class="bi bi-shield-check text-success"></i> <span data-i18n="navSecurity">7. Security & Exports</span></a>
+            </aside>
+
+            <!-- Main Documentation Content Column -->
+            <main class="col-lg-9 col-xl-10 p-3 p-md-5">
+
+                <!-- Welcome Hero Banner -->
+                <div class="learn-card p-4 p-md-5 mb-4" style="background: linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(99,102,241,0.08) 100%); border-color: rgba(37,99,235,0.25);">
+                    <div class="row align-items-center g-4">
+                        <div class="col-md-8">
+                            <span class="badge bg-primary mb-2 px-2.5 py-1" data-i18n="heroBadge">Official Learning Portal & Technical Reference</span>
+                            <h2 class="display-6 fw-bold mb-2" data-i18n="heroTitle">Vedra BI Learning Center & Complete Formula Handbook</h2>
+                            <p class="lead text-muted mb-3" style="font-size: 1.05rem;" data-i18n="heroDesc">
+                                Master every dimension of Vedra BI: multi-format data ingestion (CSV/Excel/JSON), in-memory spreadsheet editing, 15+ visual chart types, rich text commentary, drag-and-drop dashboard layouts, icon-only navigation, and all 15 dynamic card formulas.
+                            </p>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a href="#formulasOverview" class="btn btn-primary btn-sm px-3"><i class="bi bi-lightning-charge-fill me-1"></i> <span data-i18n="heroBtnFormulas">Explore 15 Formulas</span></a>
+                                <a href="#sandboxSection" class="btn btn-outline-primary btn-sm px-3"><i class="bi bi-play-circle-fill me-1"></i> <span data-i18n="heroBtnSandbox">Launch Live Sandbox</span></a>
+                                <a href="#workflowMapSection" class="btn btn-outline-secondary btn-sm px-3"><i class="bi bi-diagram-3 me-1"></i> <span data-i18n="heroBtnWorkflow">View Complete Workflow</span></a>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="p-3 bg-white dark-theme-bg-dark rounded-4 shadow-sm border border-light-subtle d-inline-block text-start" style="max-width: 290px; width: 100%;">
+                                <div class="small fw-bold text-muted mb-2"><i class="bi bi-check2-circle text-success me-1"></i> <span data-i18n="quickFactsTitle">Quick System Facts</span></div>
+                                <div class="d-flex justify-content-between py-1 border-bottom border-light-subtle small">
+                                    <span data-i18n="factFormulasLabel">Formulas:</span>
+                                    <span class="fw-bold text-primary" data-i18n="factFormulasVal">15 Dynamic Functions</span>
+                                </div>
+                                <div class="d-flex justify-content-between py-1 border-bottom border-light-subtle small">
+                                    <span data-i18n="factChartsLabel">Chart Types:</span>
+                                    <span class="fw-bold text-success" data-i18n="factChartsVal">15+ Visual Types</span>
+                                </div>
+                                <div class="d-flex justify-content-between py-1 border-bottom border-light-subtle small">
+                                    <span data-i18n="factSpeedLabel">Data Engine:</span>
+                                    <span class="fw-bold text-amber" data-i18n="factSpeedVal">DuckDB 60 FPS OLAP</span>
+                                </div>
+                                <div class="d-flex justify-content-between pt-1 small">
+                                    <span data-i18n="factSecurityLabel">Security:</span>
+                                    <span class="fw-bold text-danger" data-i18n="factSecurityVal">8-Digit PIN Guard</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 1: OVERVIEW & ARCHITECTURE -->
+                <section id="overviewSection" class="learn-card guide-topic">
+                    <h3 class="h4 fw-bold mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-cpu-fill text-primary"></i> <span data-i18n="sec1Title">1. Platform Overview & Architectural Pillars</span>
+                    </h3>
+                    <p data-i18n="sec1Intro">
+                        Vedra BI is an enterprise-grade analytics and visualization platform built with a local-first philosophy. Powered by an embedded in-memory DuckDB OLAP engine and Apache Arrow columnar binary IPC, it processes hundreds of thousands of records at 60 FPS directly in the browser with zero server roundtrips.
+                    </p>
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded-3 h-100 bg-body-tertiary">
+                                <h6 class="fw-bold text-primary"><i class="bi bi-lightning-fill me-1"></i> <span data-i18n="pillar1Title">Reactive Grid Engine</span></h6>
+                                <p class="small text-muted mb-0" data-i18n="pillar1Desc">Editing any cell inside the spreadsheet immediately pushes reactive updates to all bound KPI cards, charts, and computed formulas with zero page reloads.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded-3 h-100 bg-body-tertiary">
+                                <h6 class="fw-bold text-success"><i class="bi bi-calculator me-1"></i> <span data-i18n="pillar2Title">Excel-Grade Formulas</span></h6>
+                                <p class="small text-muted mb-0" data-i18n="pillar2Desc">Leverage 15 dynamic formulas like SUM, GROWTH, STATUS, and FORMAT to create responsive, calculated executive KPI cards identical to modern financial models.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded-3 h-100 bg-body-tertiary">
+                                <h6 class="fw-bold text-purple"><i class="bi bi-shield-lock-fill me-1"></i> <span data-i18n="pillar3Title">Enterprise Security</span></h6>
+                                <p class="small text-muted mb-0" data-i18n="pillar3Desc">Hardened with an 8-digit security PIN, automatic 30-minute inactivity lockout, and local encrypted session persistence for complete data privacy.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 2: END-TO-END WORKFLOW MAP -->
+                <section id="workflowMapSection" class="learn-card guide-topic">
+                    <h3 class="h4 fw-bold mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-diagram-3-fill text-indigo-500"></i> <span data-i18n="sec2Title">2. End-to-End Workflow: From Raw Data to Executive Report</span>
+                    </h3>
+                    <p class="text-muted" data-i18n="sec2Intro">Follow these six production-grade steps to transform raw files into interactive executive intelligence:</p>
+
+                    <div class="mt-4">
+                        <div class="process-step">
+                            <div class="process-step-num">1</div>
+                            <div>
+                                <h5 class="fw-bold mb-1" data-i18n="step1Title">Data Ingestion & Schema Detection</h5>
+                                <p class="text-muted mb-1" data-i18n="step1Desc">Drag and drop CSV, multi-sheet Excel (.xlsx/.xls), JSON payloads, or paste a live Google Sheets web CSV URL. The system automatically detects delimiters, headers, and column types.</p>
+                                <span class="badge bg-secondary-subtle text-secondary">CSV • XLSX • JSON • Google Sheets</span>
+                            </div>
+                        </div>
+
+                        <div class="process-step">
+                            <div class="process-step-num">2</div>
+                            <div>
+                                <h5 class="fw-bold mb-1" data-i18n="step2Title">Spreadsheet Exploration & In-Place Editing</h5>
+                                <p class="text-muted mb-1" data-i18n="step2Desc">Open the spreadsheet grid (edit_data.html) to inspect rows, double-click any cell to modify values inline, add rows, sort columns, and review cell addresses (A1, B4).</p>
+                                <span class="badge bg-secondary-subtle text-secondary">A1, B4 Cell Address • Realtime Reactive Sync</span>
+                            </div>
+                        </div>
+
+                        <div class="process-step">
+                            <div class="process-step-num">3</div>
+                            <div>
+                                <h5 class="fw-bold mb-1" data-i18n="step3Title">Visual Analytics & Chart Creation</h5>
+                                <p class="text-muted mb-1" data-i18n="step3Desc">Choose from 15+ visualization types (Bar, Line, Area, Pie, Donut, Scatter, Radar, Heatmap, Funnel, Gauge). Configure categorical dimensions, numerical metrics, and aggregations.</p>
+                                <span class="badge bg-secondary-subtle text-secondary">ECharts Engine • Palettes • Custom Legends</span>
+                            </div>
+                        </div>
+
+                        <div class="process-step">
+                            <div class="process-step-num">4</div>
+                            <div>
+                                <h5 class="fw-bold mb-1" data-i18n="step4Title">KPI Cards & Formula Binding</h5>
+                                <p class="text-muted mb-1" data-i18n="step4Desc">Select modern KPI cards from the template gallery and bind formulas like =SUM(Sales, R, "Total: ") or =GROWTH(B4, B3, R, "MoM: ") to create live metrics.</p>
+                                <span class="badge bg-secondary-subtle text-secondary">15 Functions • Direction (R/L) • Click-to-bind Cells</span>
+                            </div>
+                        </div>
+
+                        <div class="process-step">
+                            <div class="process-step-num">5</div>
+                            <div>
+                                <h5 class="fw-bold mb-1" data-i18n="step5Title">Narrative Textboxes & Rich Commentary</h5>
+                                <p class="text-muted mb-1" data-i18n="step5Desc">Use the embedded Quill WYSIWYG editor to document business context, executive takeaways, bullet points, and dynamic formula references within floating textboxes.</p>
+                                <span class="badge bg-secondary-subtle text-secondary">Quill WYSIWYG • Sticky Notes • Insights</span>
+                            </div>
+                        </div>
+
+                        <div class="process-step">
+                            <div class="process-step-num">6</div>
+                            <div>
+                                <h5 class="fw-bold mb-1" data-i18n="step6Title">Layout Optimization, Filtering & Export</h5>
+                                <p class="text-muted mb-1" data-i18n="step6Desc">Align cards with snap-to-grid (Ctrl+G), activate split comparison mode, apply global slicers, and download high-resolution PNG captures or branded PDF executive reports.</p>
+                                <span class="badge bg-secondary-subtle text-secondary">Snap to Grid • Split View • PDF Report • PNG Capture</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 3: MASTER GUIDE TO ALL 15 FORMULAS -->
+                <section id="formulasOverview" class="learn-card guide-topic">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                        <div>
+                            <h3 class="h4 fw-bold mb-1 d-flex align-items-center gap-2">
+                                <i class="bi bi-lightning-charge-fill text-amber-500"></i> <span data-i18n="sec3Title">3. Master Technical Guide: All 15 Dynamic Formulas</span>
+                            </h3>
+                            <p class="text-muted mb-0" data-i18n="sec3Subtitle">Exhaustive reference for every formula: exact syntax, parameter breakdown, business usage, and 1-click copy capability.</p>
+                        </div>
+                        <a href="#sandboxSection" class="btn btn-sm btn-outline-primary"><i class="bi bi-play-circle me-1"></i> <span data-i18n="liveSandboxBtn">Live Sandbox</span></a>
+                    </div>
+
+                    <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-4">
+                        <i class="bi bi-info-circle-fill fs-5 text-primary"></i>
+                        <div>
+                            <strong data-i18n="dirNoticeTitle">Direction Parameter Explanation (R vs. L):</strong><br>
+                            <span data-i18n="dirNoticeR">R (Right): Displays the computed numerical value to the RIGHT of your label (e.g., "Revenue: $45,000").</span><br>
+                            <span data-i18n="dirNoticeL">L (Left): Displays the computed numerical value to the LEFT of your label (e.g., "$45,000 Revenue").</span>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Formula Cards Container (Rendered by learning.ts in 100% clean active language) -->
+                    <div id="formulaCardsContainer"></div>
+                </section>
+
+                <!-- SECTION 4: INTERACTIVE LIVE SANDBOX -->
+                <section id="sandboxSection" class="learn-card guide-topic">
+                    <h3 class="h4 fw-bold mb-2 d-flex align-items-center gap-2">
+                        <i class="bi bi-terminal-dash text-primary"></i> <span data-i18n="sandboxTitle">4. Live Interactive Formula Sandbox</span>
+                    </h3>
+                    <p class="text-muted mb-3" data-i18n="sandboxSubtitle">
+                        Select a preset or type a custom formula below. You can also modify numbers in the sample data table to test instant recalculation.
+                    </p>
+
+                    <div class="sandbox-container">
+                        <!-- Sample Interactive Table -->
+                        <div class="table-responsive mb-3">
+                            <table class="table table-bordered table-sm sandbox-table mb-0" id="sandboxTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 70px;">Ref</th>
+                                        <th>A (<span data-i18n="tableRegion">Region</span>)</th>
+                                        <th>B (<span data-i18n="tableQ1">Q1 Sales</span>)</th>
+                                        <th>C (<span data-i18n="tableQ2">Q2 Sales</span>)</th>
+                                        <th>D (<span data-i18n="tableExp">Expenses</span>)</th>
+                                        <th>E (<span data-i18n="tableTarget">Target</span>)</th>
+                                        <th>F (<span data-i18n="tableStatus">Status</span>)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="text-muted text-center fw-bold">Row 2</td>
+                                        <td>North</td>
+                                        <td class="sandbox-editable-cell" contenteditable="true">85000</td>
+                                        <td class="sandbox-editable-cell" contenteditable="true">95000</td>
+                                        <td class="sandbox-editable-cell" contenteditable="true">32000</td>
+                                        <td class="sandbox-editable-cell" contenteditable="true">100000</td>
+                                        <td>Active</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted text-center fw-bold">Row 3</td>
+                                        <td>South</td>
+                                        <td class="sandbox-editable-cell" contenteditable="true">65000</td>
+                                        <td class="sandbox-editable-cell" contenteditable="true">72000</td>
+                                        <td class="sandbox-editable-cell" contenteditable="true">28000</td>
+                                        <td class="sandbox-editable-cell" contenteditable="true">80000</td>
+                                        <td>Active</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted text-center fw-bold">Row 4</td>
+                                        <td>East</td>
+                                        <td class="sandbox-editable-cell" contenteditable="true">120000</td>
+                                        <td class="sandbox-editable-cell" contenteditable="true">135000</td>
+                                        <td class="sandbox-editable-cell" contenteditable="true">45000</td>
+                                        <td class="sandbox-editable-cell" contenteditable="true">130000</td>
+                                        <td>Active</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted text-center fw-bold">Row 5</td>
+                                        <td>West</td>
+                                        <td class="sandbox-editable-cell" contenteditable="true">68000</td>
+                                        <td class="sandbox-editable-cell" contenteditable="true">64000</td>
+                                        <td class="sandbox-editable-cell" contenteditable="true">30000</td>
+                                        <td class="sandbox-editable-cell" contenteditable="true">75000</td>
+                                        <td>Review</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Sandbox Controls -->
+                        <div class="row g-3 align-items-center mb-3">
+                            <div class="col-md-5">
+                                <label class="small fw-bold text-muted mb-1" for="sandboxPresetSelect" data-i18n="presetLabel">Choose Formula Preset:</label>
+                                <select class="form-select form-select-sm" id="sandboxPresetSelect">
+                                    <option value='=SUM(B, R, "Q1 Total: $")'>1. SUM Column B: =SUM(B, R, "Q1 Total: $")</option>
+                                    <option value='=AVG(B, R, "Average Sales: $")'>2. AVG Column B: =AVG(B, R, "Average Sales: $")</option>
+                                    <option value='=MAX(B, R, "Peak Deal: $")'>3. MAX Column B: =MAX(B, R, "Peak Deal: $")</option>
+                                    <option value='=MIN(D, R, "Lowest Cost: $")'>4. MIN Column D: =MIN(D, R, "Lowest Cost: $")</option>
+                                    <option value='=COUNT(A, R, "Active Regions: ")'>5. COUNT Column A: =COUNT(A, R, "Active Regions: ")</option>
+                                    <option value='=GROWTH(C2, B2, R, "Growth: ")'>6. GROWTH C2 vs B2: =GROWTH(C2, B2, R, "Growth: ")</option>
+                                    <option value='=DIFF(C2, D2, R, "Net Margin: $")'>7. DIFF C2 vs D2: =DIFF(C2, D2, R, "Net Margin: $")</option>
+                                    <option value='=PERCENT(B2, E2, R, "Attainment: ")'>8. PERCENT B2 / E2: =PERCENT(B2, E2, R, "Attainment: ")</option>
+                                    <option value='=REMAINING(E2, B2, R, "Goal Deficit: $")'>9. REMAINING E2 - B2: =REMAINING(E2, B2, R, "Goal Deficit: $")</option>
+                                    <option value='=STATUS(B2, 80000, "Qualified ✅", "Disqualified ❌")'>10. STATUS B2 vs 80000</option>
+                                    <option value='=INSERT(A4, R, "Leader Territory: ")'>11. INSERT A4: =INSERT(A4, R, "Leader Territory: ")</option>
+                                    <option value='=FORMAT(B4, "INR", R, "Net: ")'>12. FORMAT B4 INR: =FORMAT(B4, "INR", R, "Net: ")</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="small fw-bold text-muted mb-1" for="sandboxFormulaInput">Formula Expression:</label>
+                                <input type="text" class="form-control form-control-sm font-mono" id="sandboxFormulaInput" value='=SUM(B, R, "Q1 Total: $")' placeholder="Enter formula, e.g., =SUM(B, R, &quot;Total: $&quot;)">
+                            </div>
+                            <div class="col-md-2 mt-md-4">
+                                <button class="btn btn-sm btn-primary w-100" id="sandboxRunBtn" data-i18n="runBtn">
+                                    <i class="bi bi-play-fill me-1"></i> Evaluate / Run
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Output Display Box -->
+                        <div class="p-3 rounded-3 bg-body-tertiary border">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <div>
+                                    <span class="small fw-bold text-muted text-uppercase" style="letter-spacing: 0.05em;" data-i18n="resultHeader">Calculated Live Output:</span>
+                                    <h4 class="fw-bold text-primary font-mono mb-0 mt-1" id="sandboxResultDisplay">Q1 Total: $338,000</h4>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Reactive Engine Sync</span>
+                                </div>
+                            </div>
+                            <hr class="my-2 border-light-subtle">
+                            <div class="small text-muted font-mono" id="sandboxResultDesc">
+                                Sum of numerical values in Column B = 338,000
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 5: STEP 1 - DATA INGESTION -->
+                <section id="dataUploadSection" class="learn-card guide-topic">
+                    <h3 class="h4 fw-bold mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-file-earmark-arrow-up-fill text-primary"></i> <span data-i18n="secDataTitle">5. Detailed Guide: Data Ingestion & DuckDB OLAP Engine</span>
+                    </h3>
+                    <p data-i18n="secDataIntro">Vedra BI provides resilient ingestion pipelines for structured and semi-structured business datasets:</p>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded-3 h-100">
+                                <h6 class="fw-bold text-primary"><i class="bi bi-filetype-csv me-1"></i> <span data-i18n="csvUploadTitle">1. CSV Ingestion (Drag & Drop)</span></h6>
+                                <p class="small text-muted mb-2" data-i18n="csvUploadDesc">Drop any comma, semicolon, or tab-delimited file directly into the application. Automatic delimiter detection handles varied regional formatting seamlessly.</p>
+                                <span class="badge bg-light text-dark border">Auto-Delimiter Detect</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded-3 h-100">
+                                <h6 class="fw-bold text-success"><i class="bi bi-file-earmark-excel me-1"></i> <span data-i18n="excelUploadTitle">2. Excel Workbooks (.xlsx / .xls)</span></h6>
+                                <p class="small text-muted mb-2" data-i18n="excelUploadDesc">Upload multi-sheet spreadsheets with full sheet selection support. Headers and typed values are parsed without requiring cloud processing.</p>
+                                <span class="badge bg-light text-dark border">Multi-Sheet Parser</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded-3 h-100">
+                                <h6 class="fw-bold text-info"><i class="bi bi-filetype-json me-1"></i> <span data-i18n="jsonUploadTitle">3. JSON & REST API Payloads</span></h6>
+                                <p class="small text-muted mb-2" data-i18n="jsonUploadDesc">Paste or upload nested JSON arrays. The built-in flattening engine converts structured hierarchies into flat, analytical columnar tables.</p>
+                                <span class="badge bg-light text-dark border">JSON Flatten Engine</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded-3 h-100">
+                                <h6 class="fw-bold text-danger"><i class="bi bi-google me-1"></i> <span data-i18n="gSheetsUploadTitle">4. Google Sheets & Live Web URLs</span></h6>
+                                <p class="small text-muted mb-2" data-i18n="gSheetsUploadDesc">Connect published Google Sheets CSV links or live HTTP data feeds for continuous dashboard synchronization.</p>
+                                <span class="badge bg-light text-dark border">Live Web Sync</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 p-3 border-start border-4 border-primary bg-body-tertiary rounded-end">
+                        <h6 class="fw-bold mb-1 text-primary"><i class="bi bi-speedometer2 me-1"></i> <span data-i18n="duckdbCalloutTitle">DuckDB In-Memory OLAP Performance:</span></h6>
+                        <p class="small text-muted mb-0" data-i18n="duckdbCalloutDesc">
+                            By utilizing WebAssembly and Apache Arrow columnar vectors, Vedra BI executes multi-dimensional analytical queries on 500,000+ rows in milliseconds, ensuring a fluid 60 FPS user experience.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- SECTION 6: STEP 2 - SPREADSHEET GRID -->
+                <section id="spreadsheetGridSection" class="learn-card guide-topic">
+                    <h3 class="h4 fw-bold mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-grid-3x3 text-success"></i> <span data-i18n="secSheetTitle">6. Detailed Guide: Spreadsheet Grid & Reactive Editing</span>
+                    </h3>
+                    <p data-i18n="secSheetIntro">The dedicated spreadsheet module (edit_data.html) provides an Excel-grade tabular interface for full data governance:</p>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded-3 bg-body-tertiary h-100">
+                                <h6 class="fw-bold text-success"><i class="bi bi-cursor-fill me-1"></i> <span data-i18n="sheetFeature1Title">Double-Click Inline Editing</span></h6>
+                                <p class="small text-muted mb-0" data-i18n="sheetFeature1Desc">Double-click any cell to enter edit mode, type updated numbers or text, and press Enter. All downstream visualizations update instantaneously.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded-3 bg-body-tertiary h-100">
+                                <h6 class="fw-bold text-primary"><i class="bi bi-arrows-angle-expand me-1"></i> <span data-i18n="sheetFeature2Title">Row & Column Operations</span></h6>
+                                <p class="small text-muted mb-0" data-i18n="sheetFeature2Desc">Add new rows (+Add Row), rename column headers, adjust data types (Number, Date, Text), and safely remove obsolete entries.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded-3 bg-body-tertiary h-100">
+                                <h6 class="fw-bold text-warning"><i class="bi bi-funnel-fill me-1"></i> <span data-i18n="sheetFeature3Title">Multi-Column Sorting & Search</span></h6>
+                                <p class="small text-muted mb-0" data-i18n="sheetFeature3Desc">Click column headers to sort ascending (A-Z) or descending (Z-A), or use the instant regex search box to pinpoint records.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 7: STEP 3 - CHART CREATION -->
+                <section id="chartCreationSection" class="learn-card guide-topic">
+                    <h3 class="h4 fw-bold mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-bar-chart-line-fill text-warning"></i> <span data-i18n="secChartTitle">7. Detailed Guide: Chart Creation & Visual Taxonomy</span>
+                    </h3>
+                    <p data-i18n="secChartIntro">Click the Charts icon in the main vertical sidebar to configure any of the 15+ analytical chart engines:</p>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6 col-md-4 col-xl-3">
+                            <div class="p-3 border rounded-3 h-100 bg-body-tertiary">
+                                <span class="badge bg-primary mb-1">Bar Chart</span>
+                                <h6 class="fw-bold mb-1" data-i18n="chartBarTitle">Bar & Column Charts</h6>
+                                <p class="small text-muted mb-0" data-i18n="chartBarDesc">Compare categorical dimensions such as sales by department, regional volume, or product line revenues.</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-4 col-xl-3">
+                            <div class="p-3 border rounded-3 h-100 bg-body-tertiary">
+                                <span class="badge bg-success mb-1">Line / Area</span>
+                                <h6 class="fw-bold mb-1" data-i18n="chartLineTitle">Line & Area Charts</h6>
+                                <p class="small text-muted mb-0" data-i18n="chartLineDesc">Analyze chronological trends over time, tracking continuous metrics like monthly revenue and rolling averages.</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-4 col-xl-3">
+                            <div class="p-3 border rounded-3 h-100 bg-body-tertiary">
+                                <span class="badge bg-warning text-dark mb-1">Pie / Donut</span>
+                                <h6 class="fw-bold mb-1" data-i18n="chartPieTitle">Pie & Donut Charts</h6>
+                                <p class="small text-muted mb-0" data-i18n="chartPieDesc">Display proportional distribution, market share percentages, and categorical part-to-whole splits.</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-4 col-xl-3">
+                            <div class="p-3 border rounded-3 h-100 bg-body-tertiary">
+                                <span class="badge bg-info text-dark mb-1">Scatter / Bubble</span>
+                                <h6 class="fw-bold mb-1" data-i18n="chartScatterTitle">Scatter & Bubble Charts</h6>
+                                <p class="small text-muted mb-0" data-i18n="chartScatterDesc">Plot two or three independent continuous variables to discover correlations, clusters, and statistical outliers.</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-4 col-xl-3">
+                            <div class="p-3 border rounded-3 h-100 bg-body-tertiary">
+                                <span class="badge bg-danger mb-1">Radar Chart</span>
+                                <h6 class="fw-bold mb-1" data-i18n="chartRadarTitle">Radar Charts</h6>
+                                <p class="small text-muted mb-0" data-i18n="chartRadarDesc">Evaluate multi-dimensional performance attributes across departments, products, or employee competency profiles.</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-4 col-xl-3">
+                            <div class="p-3 border rounded-3 h-100 bg-body-tertiary">
+                                <span class="badge bg-purple mb-1">Heatmap</span>
+                                <h6 class="fw-bold mb-1" data-i18n="chartHeatmapTitle">Heatmap Matrix</h6>
+                                <p class="small text-muted mb-0" data-i18n="chartHeatmapDesc">Visualize density, activity intensity, and transaction volumes across day-of-week and hour-of-day matrices.</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-4 col-xl-3">
+                            <div class="p-3 border rounded-3 h-100 bg-body-tertiary">
+                                <span class="badge bg-secondary mb-1">Gauge Meter</span>
+                                <h6 class="fw-bold mb-1" data-i18n="chartGaugeTitle">Gauge & Meter Charts</h6>
+                                <p class="small text-muted mb-0" data-i18n="chartGaugeDesc">Display progress toward KPI targets on a 0–100% scale resembling an automotive speedometer dial.</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-md-4 col-xl-3">
+                            <div class="p-3 border rounded-3 h-100 bg-body-tertiary">
+                                <span class="badge bg-dark mb-1">Funnel & Treemap</span>
+                                <h6 class="fw-bold mb-1" data-i18n="chartFunnelTitle">Funnel & Treemap Charts</h6>
+                                <p class="small text-muted mb-0" data-i18n="chartFunnelDesc">Examine conversion drop-offs along sales pipelines, or visualize hierarchical asset breakdowns with nested rectangular tiles.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card p-3 bg-light-subtle border">
+                        <h6 class="fw-bold mb-2 text-primary" data-i18n="chartStepsTitle">Three Steps to Build Any Chart:</h6>
+                        <ol class="mb-0 small text-muted">
+                            <li data-i18n="chartStep1">1. Select Dimension (X-Axis): Choose the categorical column to group records by (e.g., Region, Month).</li>
+                            <li data-i18n="chartStep2">2. Select Metric (Y-Axis): Choose the numerical column to compute (e.g., Sales, Margin, Volume).</li>
+                            <li data-i18n="chartStep3">3. Set Aggregation Method: Choose SUM (total), AVG (mean), or COUNT (frequency).</li>
+                        </ol>
+                    </div>
+                </section>
+
+                <!-- SECTION 8: STEP 4 - TEXTBOX & NOTES -->
+                <section id="textboxSection" class="learn-card guide-topic">
+                    <h3 class="h4 fw-bold mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-textarea-t text-info"></i> <span data-i18n="secTextTitle">8. Detailed Guide: Textbox Annotations & Executive Storytelling</span>
+                    </h3>
+                    <p data-i18n="secTextIntro">Dashboards achieve maximum business impact when accompanied by clear executive narrative and context:</p>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded-3 h-100 bg-body-tertiary">
+                                <h6 class="fw-bold text-info"><i class="bi bi-fonts me-1"></i> <span data-i18n="textFeature1Title">Quill WYSIWYG Rich Text Engine</span></h6>
+                                <p class="small text-muted mb-0" data-i18n="textFeature1Desc">Format headings, bold emphasis, italics, ordered lists, callout quotes, and brand color highlights effortlessly.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded-3 h-100 bg-body-tertiary">
+                                <h6 class="fw-bold text-primary"><i class="bi bi-code-slash me-1"></i> <span data-i18n="textFeature2Title">Dynamic Formula Integration</span></h6>
+                                <p class="small text-muted mb-0" data-i18n="textFeature2Desc">Embed dynamic formula tags directly into text notes so that summaries and executive takeaways remain perpetually up to date.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 9: STEP 5 - DASHBOARD LAYOUT -->
+                <section id="dashboardLayoutSection" class="learn-card guide-topic">
+                    <h3 class="h4 fw-bold mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-layout-wtf text-purple"></i> <span data-i18n="secLayoutTitle">9. Detailed Guide: Dashboard Canvas, Grid Layouts & Views</span>
+                    </h3>
+                    <p data-i18n="secLayoutIntro">Vedra BI provides a versatile, responsive workspace with precision grid alignment:</p>
+                    <ul class="text-muted small">
+                        <li class="mb-1" data-i18n="layoutPoint1">Freeform Placement & Resizing: Drag and drop cards anywhere on the canvas, resizing from edges and corners.</li>
+                        <li class="mb-1" data-i18n="layoutPoint2">Snap-to-Grid (Ctrl+G): Toggle a magnetic alignment grid to maintain clean margins and uniform spacing.</li>
+                        <li class="mb-1" data-i18n="layoutPoint3">One-Click Auto Arrange: Instantly organize cards into optimal 1-column, 2-column, or 3-column masonry arrangements.</li>
+                        <li class="mb-1" data-i18n="layoutPoint4">Comparison Split View: Split the canvas into side-by-side comparative quadrants to evaluate multiple time horizons.</li>
+                        <li class="mb-1" data-i18n="layoutPoint5">Global Interactive Slicers: Filter by date ranges, quarters, or regions with instantaneous synchronization across all visuals.</li>
+                    </ul>
+                </section>
+
+                <!-- SECTION 10: STEP 6 - MENU & TOOLBAR GUIDE -->
+                <section id="menuNavigationSection" class="learn-card guide-topic">
+                    <h3 class="h4 fw-bold mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-compass text-danger"></i> <span data-i18n="secMenuTitle">10. Detailed Guide: Icon-Only Navigation & Menu Architecture</span>
+                    </h3>
+                    <p class="text-muted" data-i18n="secMenuIntro">In accordance with UI design standards, Vedra BI utilizes an icon-only navigation structure without text labels. Below is the full directory of interface controls:</p>
+
+                    <h5 class="fw-bold text-primary mb-3" data-i18n="menuVTitle">Main Vertical Sidebar Icons:</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6 col-xl-4">
+                            <div class="icon-catalog-card">
+                                <div class="icon-box bg-primary-subtle text-primary"><i class="bi bi-file-earmark-arrow-up"></i></div>
+                                <div>
+                                    <div class="fw-bold small">Data</div>
+                                    <div class="text-muted" style="font-size: 0.76rem;" data-i18n="menuDataDesc">Upload CSV/Excel, manage columns, and review raw schemas.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-xl-4">
+                            <div class="icon-catalog-card">
+                                <div class="icon-box bg-success-subtle text-success"><i class="bi bi-bar-chart"></i></div>
+                                <div>
+                                    <div class="fw-bold small">Charts</div>
+                                    <div class="text-muted" style="font-size: 0.76rem;" data-i18n="menuChartsDesc">Create new charts, configure visual types, and bind axes.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-xl-4">
+                            <div class="icon-catalog-card">
+                                <div class="icon-box bg-warning-subtle text-warning"><i class="bi bi-patch-check-fill"></i></div>
+                                <div>
+                                    <div class="fw-bold small">KPIs</div>
+                                    <div class="text-muted" style="font-size: 0.76rem;" data-i18n="menuKpisDesc">Build executive KPI metric cards, target gauges, and progress bars.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-xl-4">
+                            <div class="icon-catalog-card">
+                                <div class="icon-box bg-info-subtle text-info"><i class="bi bi-grid-1x2-fill"></i></div>
+                                <div>
+                                    <div class="fw-bold small">Templates</div>
+                                    <div class="text-muted" style="font-size: 0.76rem;" data-i18n="menuTemplatesDesc">Access pre-designed card layouts and the dynamic formula editor.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-xl-4">
+                            <div class="icon-catalog-card">
+                                <div class="icon-box bg-secondary-subtle text-secondary"><i class="bi bi-sliders"></i></div>
+                                <div>
+                                    <div class="fw-bold small">Settings</div>
+                                    <div class="text-muted" style="font-size: 0.76rem;" data-i18n="menuSettingsDesc">Configure LTTB downsampling thresholds and rendering options.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-xl-4">
+                            <div class="icon-catalog-card">
+                                <div class="icon-box bg-danger-subtle text-danger"><i class="bi bi-gear"></i></div>
+                                <div>
+                                    <div class="fw-bold small">Operations</div>
+                                    <div class="text-muted" style="font-size: 0.76rem;" data-i18n="menuOperationsDesc">Save, load, or reset dashboard configurations and layout states.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-xl-4">
+                            <div class="icon-catalog-card">
+                                <div class="icon-box bg-primary-subtle text-primary"><i class="bi bi-filter"></i></div>
+                                <div>
+                                    <div class="fw-bold small">Filters</div>
+                                    <div class="text-muted" style="font-size: 0.76rem;" data-i18n="menuFiltersDesc">Manage global slicers, date bounds, and cross-filtering rules.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-xl-4">
+                            <div class="icon-catalog-card">
+                                <div class="icon-box bg-purple-subtle text-purple"><i class="bi bi-eye"></i></div>
+                                <div>
+                                    <div class="fw-bold small">Views</div>
+                                    <div class="text-muted" style="font-size: 0.76rem;" data-i18n="menuViewsDesc">Reorder canvas visual layers and restore saved view presets.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-xl-4">
+                            <div class="icon-catalog-card">
+                                <div class="icon-box bg-success-subtle text-success"><i class="bi bi-brush"></i></div>
+                                <div>
+                                    <div class="fw-bold small">Formatting</div>
+                                    <div class="text-muted" style="font-size: 0.76rem;" data-i18n="menuFormattingDesc">Apply color palettes, typography rules, borders, and margins.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-xl-4">
+                            <div class="icon-catalog-card">
+                                <div class="icon-box bg-warning-subtle text-warning"><i class="bi bi-magic"></i></div>
+                                <div>
+                                    <div class="fw-bold small">Effects</div>
+                                    <div class="text-muted" style="font-size: 0.76rem;" data-i18n="menuEffectsDesc">Toggle soft shadows, glassmorphism, and entry animations.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-xl-4">
+                            <div class="icon-catalog-card">
+                                <div class="icon-box bg-info-subtle text-info"><i class="bi bi-textarea-t"></i></div>
+                                <div>
+                                    <div class="fw-bold small">Textbox</div>
+                                    <div class="text-muted" style="font-size: 0.76rem;" data-i18n="menuTextboxDesc">Create floating rich text boxes, annotations, and summaries.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-xl-4">
+                            <div class="icon-catalog-card">
+                                <div class="icon-box bg-danger-subtle text-danger"><i class="bi bi-mortarboard-fill"></i></div>
+                                <div>
+                                    <div class="fw-bold small">Academy</div>
+                                    <div class="text-muted" style="font-size: 0.76rem;" data-i18n="menuLearningDesc">Access this comprehensive Academy and formula reference guide.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-xl-4">
+                            <div class="icon-catalog-card">
+                                <div class="icon-box bg-primary-subtle text-primary"><i class="bi bi-person-circle"></i></div>
+                                <div>
+                                    <div class="fw-bold small">Profile</div>
+                                    <div class="text-muted" style="font-size: 0.76rem;" data-i18n="menuProfileDesc">Manage user identity, security PIN, and workspace backups.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-xl-4">
+                            <div class="icon-catalog-card">
+                                <div class="icon-box bg-secondary-subtle text-secondary"><i class="bi bi-eye-slash"></i></div>
+                                <div>
+                                    <div class="fw-bold small">Visibility</div>
+                                    <div class="text-muted" style="font-size: 0.76rem;" data-i18n="menuToggleDesc">Instantly show or hide dashboard canvas visuals.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="fw-bold text-success mb-3" data-i18n="menuHTitle">Top Quick Action Toolbar Icons:</h5>
+                    <div class="row g-2 small text-muted">
+                        <div class="col-md-6">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item bg-transparent" data-i18n="tbTheme"><i class="bi bi-moon-stars-fill text-warning me-2"></i> <strong>Theme Toggle:</strong> Switch between Dark Mode and Silk Light Mode.</li>
+                                <li class="list-group-item bg-transparent" data-i18n="tbSnap"><i class="bi bi-grid-fill text-primary me-2"></i> <strong>Snap to Grid (Ctrl+G):</strong> Toggle magnetic card positioning.</li>
+                                <li class="list-group-item bg-transparent" data-i18n="tbComparison"><i class="bi bi-layout-split text-info me-2"></i> <strong>Split Comparison:</strong> Side-by-side dual dashboard view.</li>
+                                <li class="list-group-item bg-transparent" data-i18n="tbLttb"><i class="bi bi-speedometer2 text-primary me-2"></i> <strong>LTTB Slider:</strong> Adjust sampling resolution between 100 and 10,000 points.</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item bg-transparent" data-i18n="tbPresentation"><i class="bi bi-projector-fill text-purple me-2"></i> <strong>Presentation Mode:</strong> Enter full-screen distraction-free slideshow.</li>
+                                <li class="list-group-item bg-transparent" data-i18n="tbAudio"><i class="bi bi-volume-up-fill text-danger me-2"></i> <strong>Audio Narrator:</strong> Listen to a voice summary of primary KPI trends.</li>
+                                <li class="list-group-item bg-transparent" data-i18n="tbPalette"><i class="bi bi-search me-2"></i> <strong>Command Palette (Ctrl+K):</strong> Fast keyboard navigation search.</li>
+                                <li class="list-group-item bg-transparent" data-i18n="tbExport"><i class="bi bi-file-earmark-pdf-fill text-danger me-2"></i> <strong>Export Reports:</strong> Generate branded PDF documents or PNG captures.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECTION 11: SECURITY & EXPORTS -->
+                <section id="enterpriseFeaturesSection" class="learn-card guide-topic">
+                    <h3 class="h4 fw-bold mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-check text-success"></i> <span data-i18n="secSecurityTitle">11. Detailed Guide: Enterprise Security & Report Exports</span>
+                    </h3>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded-3 h-100 bg-body-tertiary">
+                                <h6 class="fw-bold text-danger"><i class="bi bi-key-fill me-1"></i> <span data-i18n="secPinTitle">8-Digit Security PIN</span></h6>
+                                <p class="small text-muted mb-0" data-i18n="secPinDesc">Every workspace account is protected by an 8-digit cryptographic security PIN, preventing unauthorized access across shared hardware.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded-3 h-100 bg-body-tertiary">
+                                <h6 class="fw-bold text-warning"><i class="bi bi-hourglass-split me-1"></i> <span data-i18n="secTimeoutTitle">30-Minute Inactivity Lockout</span></h6>
+                                <p class="small text-muted mb-0" data-i18n="secTimeoutDesc">Sessions automatically terminate after 30 minutes of user inactivity, requiring PIN re-authentication to resume access.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded-3 h-100 bg-body-tertiary">
+                                <h6 class="fw-bold text-primary"><i class="bi bi-file-earmark-pdf me-1"></i> <span data-i18n="secExportTitle">Production Report Exports</span></h6>
+                                <p class="small text-muted mb-0" data-i18n="secExportDesc">Produce executive-ready vector PDF reports, high-resolution PNG canvas captures, and encrypted JSON project archives in one click.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Footer -->
+                <footer class="mt-5 pt-4 border-top text-center text-muted small">
+                    <p class="mb-1" data-i18n="footerBeta">Vedra BI Enterprise Edition v1.2.0 • High-Performance Local-First Analytics</p>
+                    <p class="mb-0">
+                        <a href="index.html" class="text-decoration-none text-primary me-3"><i class="bi bi-arrow-left me-1"></i> <span data-i18n="footerBackDashboard">Return to Dashboard</span></a>
+                        <a href="edit_data.html" class="text-decoration-none text-primary me-3"><i class="bi bi-table me-1"></i> <span data-i18n="footerOpenSheet">Open Spreadsheet Grid</span></a>
+                        <a href="profile.html" class="text-decoration-none text-primary"><i class="bi bi-person-circle me-1"></i> <span data-i18n="footerProfile">Security & Profile Settings</span></a>
+                    </p>
+                </footer>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Floating Back to Top Button -->
+    <div class="back-to-top" id="backToTopBtn" title="Back to top" aria-label="Back to top">
+        <i class="bi bi-chevron-up"></i>
+    </div>
+
+    <!-- Copied Formula Toast -->
+    <div class="copy-toast" id="copyToast">
+        <i class="bi bi-check-circle-fill text-success me-1"></i> Formula copied to clipboard!
+    </div>
+
+    <!-- Theme & Scroll Listener Script -->
+    <script>
+        // 1. Theme Management Sync
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const themeIcon = document.getElementById('themeIcon');
+
+        function updateThemeIcon(isDark) {
+            if (themeIcon) {
+                themeIcon.className = isDark ? 'bi bi-sun-fill text-warning' : 'bi bi-moon-stars-fill';
+            }
+        }
+
+        const isInitiallyDark = document.documentElement.classList.contains('dark-theme');
+        updateThemeIcon(isInitiallyDark);
+
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', () => {
+                const isCurrentlyDark = document.documentElement.classList.contains('dark-theme');
+                const newTheme = isCurrentlyDark ? 'light' : 'dark';
+                
+                if (newTheme === 'dark') {
+                    document.documentElement.classList.add('dark-theme');
+                    document.documentElement.classList.remove('silk-light-theme');
+                    document.documentElement.setAttribute('data-bs-theme', 'dark');
+                    document.documentElement.style.colorScheme = 'dark';
+                } else {
+                    document.documentElement.classList.remove('dark-theme');
+                    document.documentElement.classList.add('silk-light-theme');
+                    document.documentElement.setAttribute('data-bs-theme', 'light');
+                    document.documentElement.style.colorScheme = 'light';
+                }
+                localStorage.setItem('theme', newTheme);
+                updateThemeIcon(newTheme === 'dark');
+            });
+        }
+
+        // 2. Back to Top Smooth Scroll
+        const backToTopBtn = document.getElementById('backToTopBtn');
+        window.addEventListener('scroll', () => {
+            if (backToTopBtn) {
+                if (window.scrollY > 300) {
+                    backToTopBtn.classList.add('show');
+                } else {
+                    backToTopBtn.classList.remove('show');
+                }
+            }
+        });
+
+        if (backToTopBtn) {
+            backToTopBtn.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        }
+    </script>
+
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+    <!-- Load Module Controller -->
+    <script type="module" src="/src/js/learning.ts"></script>
+</body>
+</html>

@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vedra BI Sheet</title>
+    
+    <script>
+        // Circular-Safe JSON Serialization & Console Shield (Prevents iframe bridge crash on circular objects)
+        (function() {
+            try {
+                const originalStringify = JSON.stringify;
+                function getCircularReplacer() {
+                    const seen = new WeakSet();
+                    return function(key, value) {
+                        if (typeof value === 'object' && value !== null) {
+                            if (seen.has(value)) {
+                                return '[Circular]';
+                            }
+                            seen.add(value);
+                        }
+                        return value;
+                    };
+                }
+
+                JSON.stringify = function(value, replacer, space) {
+                    try {
+                        return originalStringify.call(JSON, value, replacer, space);
+                    } catch (err) {
+                        if (err && (String(err).includes('circular') || String(err).includes('Converting circular structure to JSON'))) {
+                            try {
+                                const safeReplacer = (typeof replacer === 'function') 
+                                    ? function(k, v) {
+                                        const seen = (safeReplacer._seen || (safeReplacer._seen = new WeakSet()));
+                                        if (typeof v === 'object' && v !== null) {
+                                            if (seen.has(v)) return '[Circular]';
+                                            seen.add(v);
+                                        }
+                                        return replacer(k, v);
+                                    }
+                                    : getCircularReplacer();
+                                return originalStringify.call(JSON, value, safeReplacer, space);
+                            } catch (_) {
+                                return '"[Circular Object]"';
+                            }
+                        }
+                        throw err;
+                    }
+                };
+
+                const logMethods = ['warn', 'error', 'log', 'info', 'debug'];
+                logMethods.forEach(function(method) {
+                    if (typeof console !== 'undefined' && console[method]) {
+                        const orig = console[method];
+                        console[method] = function(...args) {
+                            try {
+                                orig.apply(console, args);
+                            } catch (e) {
+                                try {
+                                    const safeArgs = args.map(function(a) {
+                                        if (typeof a === 'object' && a !== null) {
+                                            try { return JSON.parse(JSON.stringify(a)); } catch (_) { return String(a); }
+                                        }
+                                        return a;
+                                    });
+                                    orig.apply(console, safeArgs);
+                                } catch (_) {}
+                            }
+                        };
+                    }
+                });
+            } catch (_) {}
+        })();
+    </script>
+
+    <script>
+        // Immediate Auth Guard - Redirect to login if not authenticated or session timed out
+        (function() {
+            try {
+                const pathname = window.location.pathname.toLowerCase();
+                if (pathname.includes('login')) return; // Do not run guard if on login page
+                
+                const saved = localStorage.getItem('vedrabi_current_user');
+                if (!saved) {
+                    if (!window.location.href.includes('login.html')) {
+                        window.location.replace('login.html?reason=unauthorized');
+                    }
+                    return;
+                }
+
+                // Check 30-minute inactivity session timeout
+                const TIMEOUT_MS = 30 * 60 * 1000;
+                const lastActivity = localStorage.getItem('vedrabi_last_activity');
+                if (lastActivity) {
+                    const lastTime = parseInt(lastActivity, 10);
+                    if (!isNaN(lastTime) && (Date.now() - lastTime > TIMEOUT_MS)) {
+                        localStorage.removeItem('vedrabi_current_user');
+                        localStorage.removeItem('vedrabi_last_activity');
+                        window.location.replace('login.html?reason=timeout');
+                        return;
+                    }
+                }
+
+                const parsed = JSON.parse(saved);
+                const isValid = parsed && typeof parsed === 'object' && 
+                                parsed.uid && typeof parsed.uid === 'string' && parsed.uid !== 'guest_user' && parsed.uid.trim() !== '' && 
+                                parsed.email && typeof parsed.email === 'string' && parsed.email !== 'guest@vedrabi.com' && parsed.email.trim() !== '';
+                if (!isValid) {
+                    localStorage.removeItem('vedrabi_current_user');
+                    if (!window.location.href.includes('login.html')) {
+                        window.location.replace('login.html?reason=unauthorized');
+                    }
+                    return;
+                }
+
+                // Check 8-Digit Security Password setup and session verification
+                const email = (parsed.email || parsed.uid || '').toLowerCase().trim();
+                const secAccounts = JSON.parse(localStorage.getItem('vedrabi_security_accounts') || '{}');
+                const userSec = secAccounts[email];
+
+                const isSecConfigured = userSec && userSec.accountId && (userSec.pinHash || (userSec.securityPin && userSec.securityPin.length === 8));
+                if (!isSecConfigured) {
+                    window.location.replace('login.html?setup_security=true');
+                    return;
+                }
+
+                if (parsed.securityPinVerified !== true) {
+                    window.location.replace('login.html?verify_security=true');
+                    return;
+                }
+
+                // Refresh activity timestamp
+                localStorage.setItem('vedrabi_last_activity', Date.now().toString());
+            } catch (e) {
+                localStorage.removeItem('vedrabi_current_user');
+                if (!window.location.href.includes('login.html')) {
+                    window.location.replace('login.html?reason=unauthorized');
+                }
+            }
+        })();
+    </script>
+    
+    <script>
+        // Global Error Prevention & Recovery Engine
+        window.addEventListener('error', function(event) {
+            handleGlobalError(event.error || { message: event.message }, event.filename, event.lineno, event.colno);
+        });
+        window.addEventListener('unhandledrejection', function(event) {
+            handleGlobalError(event.reason || new Error(event.reason), null, null, null);
+        });
+
+        function handleGlobalError(error, source, lineno, colno) {
+            // Ignore benign development server / Vite websocket / HMR / network errors
+            const errMsg = error ? (error.message || String(error)) : '';
+            const errStack = (error && error.stack) ? error.stack : '';
+            const errSrc = source ? String(source) : '';
+            const lowerMsg = (errMsg + ' ' + errStack + ' ' + errSrc).toLowerCase();
+            
+            if (
+                !lowerMsg.trim() ||
+                lowerMsg.includes('websocket') ||
+                lowerMsg.includes('vite') ||
+                lowerMsg.includes('hmr') ||
+                lowerMsg.includes('hot-update') ||
+                lowerMsg.includes('resizeobserver') ||
+                lowerMsg.includes('speech') ||
+                lowerMsg.includes('canceled') ||
+                lowerMsg.includes('abort') ||
+                lowerMsg.includes('failed to fetch') ||
+                lowerMsg.includes('networkerror') ||
+                lowerMsg.includes('chrome-extension') ||
+                lowerMsg.includes('script error') ||
+                lowerMsg.includes('converting circular structure to json') ||
+                lowerMsg.includes('circular structure') ||
+                lowerMsg.includes('closes the circle') ||
+                lowerMsg.includes('_aistudio-iframe')
+            ) {
+                return;
+            }
+
+            console.error('[Global Error Caught]:', error, source, lineno, colno);
+            
+            // Only show if the overlay doesn't already exist to prevent duplicate triggers
+            if (document.getElementById('global-error-overlay')) return;
+            
+            const errorMessage = error ? (error.message || String(error)) : 'Unknown Error';
+            const errorStack = error ? (error.stack || '') : '';
+            const locationInfo = source ? `File: ${source}:${lineno}:${colno}` : 'In-line or Async Execution';
+            
+            const isDark = document.documentElement.classList.contains('dark-theme') || localStorage.getItem('theme') === 'dark';
+            
+            const overlay = document.createElement('div');
+            overlay.id = 'global-error-overlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background-color: ${isDark ? 'rgba(11, 15, 25, 0.96)' : 'rgba(248, 250, 252, 0.96)'};
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                color: ${isDark ? '#f8fafc' : '#0f172a'};
+                z-index: 99999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                padding: 24px;
+                overflow-y: auto;
+                box-sizing: border-box;
+            `;
+            
+            overlay.innerHTML = `
+                <div style="
+                    max-width: 560px;
+                    width: 100%;
+                    background: ${isDark ? '#111827' : '#ffffff'};
+                    border: 1px solid ${isDark ? '#1f2937' : '#e2e8f0'};
+                    border-radius: 16px;
+                    padding: 36px 32px;
+                    box-shadow: 0 20px 40px -15px ${isDark ? 'rgba(0,0,0,0.7)' : 'rgba(15,23,42,0.12)'};
+                    text-align: center;
+                ">
+                    <!-- Vedra BI Resilience Badge -->
+                    <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: ${isDark ? 'rgba(59,130,246,0.12)' : 'rgba(37,99,235,0.08)'}; color: ${isDark ? '#60a5fa' : '#2563eb'}; border: 1px solid ${isDark ? 'rgba(59,130,246,0.25)' : 'rgba(37,99,235,0.18)'}; margin-bottom: 20px;">
+                        <i class="bi bi-shield-lock-fill"></i> Vedra BI System Diagnostic
+                    </div>
+
+                    <!-- Icon Container -->
+                    <div style="
+                        width: 56px;
+                        height: 56px;
+                        margin: 0 auto 18px;
+                        border-radius: 14px;
+                        background: ${isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)'};
+                        border: 1px solid ${isDark ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)'};
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #ef4444;
+                        font-size: 26px;
+                    ">
+                        <i class="bi bi-exclamation-octagon-fill"></i>
+                    </div>
+                    
+                    <!-- Title -->
+                    <h3 style="font-weight: 700; font-size: 20px; margin-bottom: 8px; color: ${isDark ? '#f8fafc' : '#0f172a'}; letter-spacing: -0.3px;">
+                        Application Exception Intercepted
+                    </h3>
+                    <p style="font-size: 14px; line-height: 1.55; color: ${isDark ? '#94a3b8' : '#64748b'}; margin-bottom: 24px;">
+                        An unexpected runtime issue occurred. In-memory data safeguards have preserved your state. Use the controls below to resume your workspace.
+                    </p>
+                    
+                    <!-- Action Grid -->
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px;">
+                        <button onclick="window.location.reload()" style="
+                            padding: 11px 20px;
+                            background: #2563eb;
+                            color: #ffffff;
+                            border: none;
+                            border-radius: 8px;
+                            font-weight: 600;
+                            font-size: 14px;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 8px;
+                            box-shadow: 0 4px 12px rgba(37,99,235,0.22);
+                            transition: background-color 0.18s ease;
+                        ">
+                            <i class="bi bi-arrow-clockwise"></i> Reload Session & Reconnect
+                        </button>
+                        
+                        <a href="index.html" style="
+                            text-decoration: none;
+                            padding: 11px 20px;
+                            background: ${isDark ? '#1f2937' : '#f1f5f9'};
+                            color: ${isDark ? '#f8fafc' : '#0f172a'};
+                            border: 1px solid ${isDark ? '#374151' : '#cbd5e1'};
+                            border-radius: 8px;
+                            font-weight: 600;
+                            font-size: 14px;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 8px;
+                            transition: all 0.18s ease;
+                        ">
+                            <i class="bi bi-speedometer2"></i> Return to Main Dashboard
+                        </a>
+
+                        <button onclick="if(confirm('Reset local cache and workspace preferences? This will refresh your analytical workspace.')) { localStorage.clear(); sessionStorage.clear(); window.location.reload(); }" style="
+                            padding: 10px 18px;
+                            background: transparent;
+                            color: ${isDark ? '#94a3b8' : '#64748b'};
+                            border: 1px solid ${isDark ? '#374151' : '#e2e8f0'};
+                            border-radius: 8px;
+                            font-weight: 500;
+                            font-size: 13px;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 8px;
+                            transition: all 0.18s ease;
+                        ">
+                            <i class="bi bi-arrow-counterclockwise"></i> Safe Mode Reset (Clear Cache)
+                        </button>
+                    </div>
+                    
+                    <!-- Technical Diagnostics Accordion -->
+                    <details style="text-align: left; background: ${isDark ? '#0b0f19' : '#f8fafc'}; border: 1px solid ${isDark ? '#1f2937' : '#e2e8f0'}; border-radius: 10px; padding: 12px 14px;">
+                        <summary style="cursor: pointer; font-size: 13px; font-weight: 600; color: ${isDark ? '#60a5fa' : '#2563eb'}; outline: none; user-select: none; display: flex; align-items: center; justify-content: space-between;">
+                            <span style="display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="bi bi-terminal-fill"></i> Technical Diagnostic Details
+                            </span>
+                            <span style="font-size: 11px; opacity: 0.7;">Click to inspect</span>
+                        </summary>
+                        <div style="margin-top: 10px; font-size: 12px; font-family: 'JetBrains Mono', monospace; white-space: pre-wrap; word-break: break-all; max-height: 180px; overflow-y: auto; color: ${isDark ? '#94a3b8' : '#334155'}; background: ${isDark ? '#070a12' : '#ffffff'}; padding: 10px; border-radius: 6px; border: 1px solid ${isDark ? '#1f2937' : '#e2e8f0'};">
+<strong style="color: #ef4444;">Error:</strong> ${errorMessage}
+<strong style="color: ${isDark ? '#60a5fa' : '#2563eb'};">Source:</strong> ${locationInfo}
+${errorStack ? `\n<strong style="color: ${isDark ? '#cbd5e1' : '#64748b'};">Stack Trace:</strong>\n${errorStack}` : ''}
+                        </div>
+                    </details>
+                </div>
+            `;
+            
+            document.body.appendChild(overlay);
+        }
+
+        // Early CDN Fallback engine
+        window.handleCdnError = function(element, fallbackUrl) {
+            console.error('[CDN Fallback Engine] Failed to load resource:', element.src || element.href);
+            if (element.dataset.fallbackTried === 'true') return;
+            
+            if (element.tagName === 'SCRIPT') {
+                const script = document.createElement('script');
+                script.src = fallbackUrl;
+                script.dataset.fallbackTried = 'true';
+                script.onload = () => console.log('[CDN Fallback Engine] Loaded fallback:', fallbackUrl);
+                script.onerror = () => handleGlobalError(new Error('Failed to load critical script ' + fallbackUrl));
+                document.head.appendChild(script);
+            } else if (element.tagName === 'LINK') {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = fallbackUrl;
+                link.dataset.fallbackTried = 'true';
+                link.onload = () => console.log('[CDN Fallback Engine] Loaded fallback stylesheet:', fallbackUrl);
+                document.head.appendChild(link);
+            }
+        };
+    </script>
+    
+    <!-- Zero-FOUC Theme Pre-Initialization Engine (Synchronous Head Execution) -->
+    <script>
+        (function() {
+            try {
+                const savedTheme = localStorage.getItem('theme') || ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light');
+                const isDark = savedTheme === 'dark';
+                const root = document.documentElement;
+                if (isDark) {
+                    root.classList.add('dark-theme');
+                    root.classList.remove('silk-light-theme');
+                    root.setAttribute('data-bs-theme', 'dark');
+                    root.style.colorScheme = 'dark';
+                } else {
+                    root.classList.remove('dark-theme');
+                    root.classList.add('silk-light-theme');
+                    root.setAttribute('data-bs-theme', 'light');
+                    root.style.colorScheme = 'light';
+                }
+            } catch (e) {}
+        })();
+    </script>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" onerror="handleCdnError(this, 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css')">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" onerror="handleCdnError(this, 'https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css')">
+    
+    
+    
+    <!-- Luckysheet CSS from Forked Repo -->
+    <link rel='stylesheet' href='https://dhaval-vedra.github.io/Luckysheet/dist/plugins/css/pluginsCss.css' />
+    <link rel='stylesheet' href='https://dhaval-vedra.github.io/Luckysheet/dist/plugins/plugins.css' />
+    <link rel='stylesheet' href='https://dhaval-vedra.github.io/Luckysheet/dist/css/luckysheet.css' />
+    <link rel='stylesheet' href='https://dhaval-vedra.github.io/Luckysheet/dist/assets/iconfont/iconfont.css' />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji" !important;
+            background-color: #0d1117;
+        }
+        #luckysheet-container {
+            width: 100%;
+            height: calc(100vh - 54px);
+            position: fixed;
+            top: 54px;
+            left: 0;
+            background-color: #ffffff;
+        }
+        #control-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #24292f !important; /* GitHub dark header background */
+            height: 54px !important;
+            border-bottom: 1px solid #1b1f24 !important;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px !important;
+            z-index: 999;
+            box-shadow: 0 1px 0 rgba(27,31,35,0.04) !important;
+        }
+        #custom-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #custom-title {
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            color: #ffffff !important;
+            letter-spacing: 0px !important;
+        }
+        #control-panel-buttons {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn {
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            padding: 5px 12px !important;
+            height: 34px !important;
+            line-height: 20px !important;
+            border-radius: 6px !important;
+            border: 1px solid rgba(27,31,36,0.15) !important;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 6px !important;
+            cursor: pointer !important;
+            text-decoration: none !important;
+            position: relative;
+        }
+        .btn i {
+            font-size: 1.05rem;
+        }
+        .btn-icon-nav {
+            width: 36px !important;
+            height: 34px !important;
+            padding: 0 !important;
+            border-radius: 8px !important;
+        }
+        .btn-icon-nav:hover {
+            transform: translateY(-1px);
+        }
+        .btn-icon-nav:active {
+            transform: translateY(1px);
+        }
+        .btn-primary {
+            background-color: #2da44e !important;
+            border-color: rgba(27,31,36,0.15) !important;
+            color: #ffffff !important;
+        }
+        .btn-primary:hover {
+            background-color: #2c974b !important;
+            box-shadow: 0 2px 6px rgba(45, 164, 78, 0.4) !important;
+        }
+        .btn-secondary {
+            background-color: #21262d !important; /* Matches GitHub header button style */
+            color: #c9d1d9 !important;
+            border-color: rgba(240,246,252,0.1) !important;
+        }
+        .btn-secondary:hover {
+            background-color: #30363d !important;
+            border-color: #8b949e !important;
+            color: #ffffff !important;
+        }
+        .sheet-status-badge {
+            font-size: 11px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(33, 38, 45, 0.8);
+            border: 1px solid rgba(240, 246, 252, 0.1);
+            color: #8b949e;
+            transition: all 0.3s ease;
+        }
+        body.silk-light-theme .sheet-status-badge {
+            background: #eef2f6;
+            border-color: #d0d7de;
+            color: #57606a;
+        }
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(13, 17, 23, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.1rem;
+            color: #c9d1d9;
+            z-index: 1000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif !important;
+        }
+
+        /* Luckysheet logo hiding */
+        #luckysheet-info-logo {
+            display: none !important;
+        }
+
+        /* ==========================================================================
+           MODERN SPINNER & EXTENDED LIGHT/DARK THEME UX ENHANCEMENTS
+           ========================================================================== */
+        
+        /* Smooth transitions for elements */
+        #control-panel, .btn, #loading-overlay, #luckysheet-container {
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Beautiful Modern Spinner for loading overlay */
+        .spinner-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            animation: fadeIn 0.5s ease-out;
+            text-align: center;
+        }
+        .custom-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(139, 92, 246, 0.1);
+            border-left-color: #8b5cf6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* LIGHT THEME ADJUSTMENTS */
+        body.silk-light-theme {
+            background-color: #f6f8fa !important;
+        }
+        body.silk-light-theme #control-panel {
+            background-color: #ffffff !important;
+            border-bottom: 1px solid #d0d7de !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+        }
+        body.silk-light-theme #custom-title {
+            color: #24292f !important;
+        }
+        body.silk-light-theme .btn-secondary {
+            background-color: #f6f8fa !important;
+            color: #24292f !important;
+            border-color: rgba(27,31,36,0.15) !important;
+        }
+        body.silk-light-theme .btn-secondary:hover {
+            background-color: #f3f4f6 !important;
+            border-color: rgba(27,31,36,0.15) !important;
+            color: #24292f !important;
+        }
+        body.silk-light-theme #loading-overlay {
+            background: rgba(255, 255, 255, 0.95) !important;
+            color: #24292f !important;
+        }
+        body.silk-light-theme .custom-spinner {
+            border-color: rgba(139, 92, 246, 0.15);
+            border-left-color: #8b5cf6;
+        }
+
+        /* Draft Recovery Banner styling */
+        #draft-recovery-banner {
+            position: fixed;
+            top: 65px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 720px;
+            background: #1f2937;
+            border: 1px solid #eab308;
+            border-radius: 8px;
+            padding: 14px 20px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.4);
+            z-index: 1050;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            animation: fadeInDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        body.silk-light-theme #draft-recovery-banner {
+            background: #fef9c3;
+            border-color: #eab308;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+        }
+        .draft-message {
+            font-size: 13px;
+            color: #f3f4f6;
+            font-weight: 500;
+        }
+        body.silk-light-theme .draft-message {
+            color: #713f12;
+        }
+        .draft-buttons {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translate(-50%, -15px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        /* Mobile Warning Banner */
+        #mobile-warning-banner {
+            display: none;
+            background-color: #fef3c7;
+            color: #92400e;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            text-align: center;
+            border-bottom: 1px solid #fde68a;
+            z-index: 1000;
+            position: fixed;
+            top: 54px;
+            left: 0;
+            width: 100%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        body.dark-theme #mobile-warning-banner {
+            background-color: #2b1d12;
+            color: #fef3c7;
+            border-color: #44321a;
+        }
+        @media (max-width: 768px) {
+            #mobile-warning-banner {
+                display: block;
+            }
+            #luckysheet-container {
+                top: 94px !important;
+                height: calc(100vh - 94px) !important;
+            }
+        }
+
+        /* Modal custom scrollbar and UI tuning */
+        body.silk-light-theme #helpModal .modal-content,
+        body.silk-light-theme #profileModal .modal-content {
+            background: #ffffff !important;
+            color: #24292f !important;
+            border-color: #e1e4e8 !important;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
+        }
+        body.silk-light-theme #helpModal .modal-header,
+        body.silk-light-theme #profileModal .modal-header {
+            border-bottom: 1px solid #e1e4e8 !important;
+        }
+        body.silk-light-theme #helpModal .modal-footer,
+        body.silk-light-theme #profileModal .modal-footer {
+            border-top: 1px solid #e1e4e8 !important;
+        }
+        body.silk-light-theme #helpModal .modal-title,
+        body.silk-light-theme #profileModal .modal-title {
+            color: #8b5cf6 !important;
+        }
+        body.silk-light-theme #profileModal .modal-body input,
+        body.silk-light-theme #profileModal .modal-body select {
+            background: #f6f8fa !important;
+            color: #24292f !important;
+            border-color: #d0d7de !important;
+        }
+        body.silk-light-theme #profileModal .card[style*="background: rgba(255, 255, 255, 0.02)"] {
+            border-color: #d0d7de !important;
+            background: #f6f8fa !important;
+        }
+        body.silk-light-theme #profileModal div[style*="background: rgba(0,0,0,0.15)"] {
+            background: #eaeef2 !important;
+            border-color: #d0d7de !important;
+        }
+        body.silk-light-theme #profileModal .text-muted {
+            color: #57606a !important;
+        }
+    </style>
+    <script>
+        window.addEventListener('error', function(e) {
+            const errMsg = e.message || '';
+            const errSrc = e.filename || '';
+            const lowerMsg = (errMsg + ' ' + errSrc).toLowerCase();
+            if (
+                lowerMsg.includes('websocket') ||
+                lowerMsg.includes('vite') ||
+                lowerMsg.includes('hmr') ||
+                lowerMsg.includes('hot-update')
+            ) {
+                console.warn('[Benign HMR/WebSocket Error Ignored]:', errMsg);
+                return;
+            }
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.style.backgroundColor = '#2d1a1c';
+                overlay.style.color = '#f8d7da';
+                overlay.innerHTML = '<div style="padding: 24px; text-align: center; max-width: 500px; border: 1px solid #dc3545; background: #1d1213; border-radius: 8px;">' +
+                    '<h4 style="color: #ea868f;">⚠️ Runtime Error:</h4>' +
+                    '<p style="font-family: monospace; font-size: 13px; margin-top: 12px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; text-align: left; word-break: break-all;">' + e.message + '</p>' +
+                    '<p style="font-size: 12px; margin-top: 10px; color: #adb5bd;">Filename: ' + (e.filename || 'unknown') + ' | Line: ' + (e.lineno || 'N/A') + '</p>' +
+                    '<button class="btn btn-secondary mt-3" onclick="window.location.href=\'index.html\'" style="padding: 5px 15px !important; font-size:12px !important; height:auto !important;"><i class="bi bi-arrow-left"></i> Go Back</button>' +
+                    '</div>';
+                overlay.style.display = 'flex';
+            }
+        });
+        window.addEventListener('unhandledrejection', function(e) {
+            const reason = e.reason || {};
+            const errMsg = reason.message || String(reason) || '';
+            const errStack = reason.stack || '';
+            const lowerMsg = (errMsg + ' ' + errStack).toLowerCase();
+            if (
+                lowerMsg.includes('websocket') ||
+                lowerMsg.includes('vite') ||
+                lowerMsg.includes('hmr') ||
+                lowerMsg.includes('hot-update')
+            ) {
+                console.warn('[Benign HMR/WebSocket Error Ignored]:', errMsg);
+                return;
+            }
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.style.backgroundColor = '#2d1a1c';
+                overlay.style.color = '#f8d7da';
+                overlay.innerHTML = '<div style="padding: 24px; text-align: center; max-width: 500px; border: 1px solid #dc3545; background: #1d1213; border-radius: 8px;">' +
+                    '<h4 style="color: #ea868f;">⚠️ Promise Rejection:</h4>' +
+                    '<p style="font-family: monospace; font-size: 13px; margin-top: 12px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; text-align: left; word-break: break-all;">' + (e.reason ? e.reason.message || e.reason : 'Unknown Promise Rejection') + '</p>' +
+                    '<button class="btn btn-secondary mt-3" onclick="window.location.href=\'index.html\'" style="padding: 5px 15px !important; font-size:12px !important; height:auto !important;"><i class="bi bi-arrow-left"></i> Go Back</button>' +
+                    '</div>';
+                overlay.style.display = 'flex';
+            }
+        });
+    </script>
+</head>
+<body>
+    <!-- Mobile Warning Banner -->
+    <div id="mobile-warning-banner">
+        <i class="bi bi-exclamation-triangle-fill"></i> <strong>मोबाइल स्क्रीन अलर्ट:</strong> सर्वोत्तम संपादन अनुभव और बड़ी शीट फाइलों के लिए कृपया लैंडस्केप मोड या डेस्कटॉप स्क्रीन का उपयोग करें।
+    </div>
+
+    <!-- Draft Recovery Banner -->
+    <div id="draft-recovery-banner">
+        <div class="draft-message">
+            <i class="bi bi-clock-history"></i> <strong>अनसाव्ड ड्राफ्ट मिला:</strong> आपके पास पिछले संपादन सत्र की कुछ सहेजी न गई जानकारी है।
+        </div>
+        <div class="draft-buttons">
+            <button id="restoreDraftBtn" class="btn btn-primary" style="background-color: #8b5cf6 !important; border-color: #8b5cf6 !important; font-size:12px !important; height:28px !important; padding:2px 12px !important;"><i class="bi bi-arrow-counterclockwise"></i> पुनर्स्थापित करें</button>
+            <button id="discardDraftBtn" class="btn btn-secondary" style="font-size:12px !important; height:28px !important; padding:2px 12px !important;"><i class="bi bi-trash"></i> ड्राफ्ट हटाएं</button>
+        </div>
+    </div>
+
+    <div id="loading-overlay">
+        <div class="spinner-container">
+            <div class="custom-spinner"></div>
+            <h5 style="font-weight: 600; margin: 0; font-size: 16px;">Vedra BI शीट एडिटर लोड हो रहा है...</h5>
+            <p style="font-size: 13px; color: #8b949e; margin: 0;">कृपया प्रतीक्षा करें, आपका सुरक्षित क्लाउड डेटाबेस सिंक किया जा रहा है</p>
+        </div>
+    </div>
+
+    <div id="control-panel">
+        <div id="custom-header">
+            <span id="custom-title"><i class="bi bi-file-earmark-spreadsheet-fill text-success me-1"></i> Vedra BI Sheet</span>
+            <span id="sheetSaveStatusBadge" class="sheet-status-badge">
+                <i class="bi bi-check2-circle text-success" id="sheetSaveStatusIcon"></i>
+                <span id="sheetSaveStatusText">सहेजा गया</span>
+            </span>
+        </div>
+        <div id="control-panel-buttons">
+            <!-- Icon-Only Navigation with Visual Feedback & Tooltips -->
+            <button id="saveDataBtn" class="btn btn-primary btn-icon-nav" title="डेटा सेव करें (Save Data - Ctrl+S)" aria-label="Save Data">
+                <i class="bi bi-floppy2-fill"></i>
+            </button>
+            <button id="exportCsvBtn" class="btn btn-secondary btn-icon-nav" title="CSV में डाउनलोड करें (Export CSV)" aria-label="Export CSV">
+                <i class="bi bi-filetype-csv"></i>
+            </button>
+            <button id="themeToggleBtn" class="btn btn-secondary btn-icon-nav" title="थीम बदलें (Toggle Light/Dark Theme)" aria-label="Toggle Theme">
+                <i class="bi bi-sun-fill"></i>
+            </button>
+            <button id="helpBtn" class="btn btn-secondary btn-icon-nav" title="संपादन निर्देशिका (User Guide)" data-bs-toggle="modal" data-bs-target="#helpModal" aria-label="Help Guide">
+                <i class="bi bi-question-circle-fill"></i>
+            </button>
+            <button id="profileBtn" class="btn btn-secondary btn-icon-nav" title="यूज़र प्रोफ़ाइल (User Profile)" data-bs-toggle="modal" data-bs-target="#profileModal" aria-label="User Profile">
+                <i class="bi bi-person-circle"></i>
+            </button>
+            <button id="backBtn" class="btn btn-secondary btn-icon-nav" title="मुख्य डैशबोर्ड पर जाएं (Go to Dashboard)" aria-label="Go to Dashboard">
+                <i class="bi bi-house-door-fill"></i>
+            </button>
+        </div>
+    </div>
+
+    <div id="luckysheet-container"></div>
+
+    <!-- Guided Help Modal -->
+    <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true" style="z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: #161b22; color: #c9d1d9; border: 1px solid #30363d; border-radius: 12px;">
+                <div class="modal-header" style="border-bottom: 1px solid #30363d;">
+                    <h5 class="modal-title" id="helpModalLabel" style="color: #ffd07a; font-weight: 700;"><i class="bi bi-compass-fill"></i> संपादन निर्देशिका (Editing Guide)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="background-color: transparent !important;"></button>
+                </div>
+                <div class="modal-body" style="font-size: 14px; line-height: 1.6; padding: 24px;">
+                    <div class="mb-3">
+                        <strong style="color: #ffffff;"><i class="bi bi-pencil-square"></i> 1. सेल एडिट करें (Edit Cells)</strong>
+                        <p style="color: #8b949e; font-size: 13px; margin-top: 4px; margin-left: 18px;">किसी भी सेल पर डबल-क्लिक करें या उसे सिलेक्ट करके लिखना शुरू करें।</p>
+                    </div>
+                    <div class="mb-3">
+                        <strong style="color: #ffffff;"><i class="bi bi-layout-three-columns"></i> 2. रो/कॉलम जोड़ें (Rows & Columns)</strong>
+                        <p style="color: #8b949e; font-size: 13px; margin-top: 4px; margin-left: 18px;">रो या कॉलम हेडर पर राइट-क्लिक करके आप नई पंक्ति या कॉलम जोड़/हटा सकते हैं।</p>
+                    </div>
+                    <div class="mb-3">
+                        <strong style="color: #ffffff;"><i class="bi bi-calculator"></i> 3. फॉर्मूला का उपयोग (Formulas)</strong>
+                        <p style="color: #8b949e; font-size: 13px; margin-top: 4px; margin-left: 18px;">जैसे standard Excel/Google Sheets, आप `=SUM(A1:A5)` या `=AVERAGE(B1:B10)` जैसे फॉर्मूले लिख सकते हैं।</p>
+                    </div>
+                    <div class="mb-3">
+                        <strong style="color: #ffffff;"><i class="bi bi-cloud-arrow-up"></i> 4. सुरक्षित रूप से सहेजें (Save Changes)</strong>
+                        <p style="color: #8b949e; font-size: 13px; margin-top: 4px; margin-left: 18px;">परिवर्तनों को स्थायी रूप से क्लाउड पर सहेजने के लिए ऊपर दिए गए <strong>"डेटा सेव करें"</strong> बटन पर क्लिक करें।</p>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #30363d; padding: 16px 24px;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">समझ गया (Got It)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Profile Modal -->
+    <div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true" style="z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" id="profileModalContent" style="background: #161b22; color: #c9d1d9; border: 1px solid #30363d; border-radius: 12px;">
+                <div class="modal-header" style="border-bottom: 1px solid #30363d;">
+                    <h5 class="modal-title" id="profileModalLabel" style="color: #8b5cf6; font-weight: 700;"><i class="bi bi-person-badge-fill"></i> मुख्य प्रोफ़ाइल (Main Profile)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="background-color: transparent !important;"></button>
+                </div>
+                <div class="modal-body" style="font-size: 14px; line-height: 1.6; padding: 24px;">
+                    <!-- Profile Header Card (Gradient Blue) -->
+                    <div class="card border-0 mb-3 overflow-hidden shadow" style="border-radius: 16px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);">
+                        <div class="card-body text-white text-center py-4 position-relative">
+                            <div class="position-absolute" style="top: -50px; right: -50px; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,0.08); pointer-events: none;"></div>
+                            
+                            <div class="position-relative d-inline-block mb-3">
+                                <div id="modalUserAvatar" class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-lg" style="width: 76px; height: 76px; font-size: 32px; margin: 0 auto; border: 3px solid rgba(255, 255, 255, 0.45);">
+                                    U
+                                </div>
+                                <span class="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle p-2 shadow" style="border-width: 2.5px !important;" title="Active Session"></span>
+                            </div>
+                            <h5 id="modalProfileDisplayName" class="mb-1 fw-bold" style="font-size: 1.25rem;">Demo User</h5>
+                            <p id="modalProfileUserEmail" class="text-white-50 small mb-3" style="font-size: 0.82rem; word-break: break-all; opacity: 0.85;">guest@vedrabi.com</p>
+                            <span id="modalProfileUserBadge" class="badge bg-white text-primary fw-bold px-3 py-1.5 shadow-sm" style="border-radius: 20px; font-size: 0.72rem; letter-spacing: 0.3px;"><i class="bi bi-star-fill text-warning me-1"></i> प्रो विश्लेषक (Pro Analyst)</span>
+                        </div>
+                    </div>
+
+                    <!-- Security & Unique Account ID Card -->
+                    <div class="card border-0 mb-3 shadow-sm p-3" style="border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid #30363d;">
+                        <h6 class="text-white fw-bold mb-3 small d-flex align-items-center justify-content-between">
+                            <span><i class="bi bi-shield-lock-fill text-primary me-1"></i> सुरक्षा एवं अकाउंट पहचान</span>
+                            <span class="badge bg-success bg-opacity-20 text-success fw-bold" style="font-size: 0.65rem;"><i class="bi bi-shield-check me-1"></i> 8-Digit PIN Active</span>
+                        </h6>
+
+                        <!-- Unique Account ID display -->
+                        <div class="mb-2.5 p-2.5 rounded d-flex align-items-center justify-content-between" style="background: rgba(255,255,255,0.03); border: 1px solid #30363d;">
+                            <div>
+                                <div class="text-slate-400" style="font-size: 0.72rem; font-weight: 600;">यूनिक अकाउंट ID:</div>
+                                <div class="fw-bold text-primary font-monospace" id="modalProfileAccountId" style="font-size: 0.92rem;">@user_id</div>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary py-1 px-2.5" id="modalCopyAccountIdBtn" style="border-radius: 6px; font-size: 0.72rem;" type="button">
+                                <i class="bi bi-clipboard me-1"></i> कॉपी
+                            </button>
+                        </div>
+
+                        <!-- 8-Digit PIN display & Change Password button -->
+                        <div class="p-2.5 rounded d-flex align-items-center justify-content-between" style="background: rgba(255,255,255,0.03); border: 1px solid #30363d;">
+                            <div>
+                                <div class="text-slate-400" style="font-size: 0.72rem; font-weight: 600;">8-डिजिट सुरक्षा पासवर्ड:</div>
+                                <div class="fw-bold text-white font-monospace" style="font-size: 0.9rem; letter-spacing: 2px;">••••••••</div>
+                            </div>
+                            <button class="btn btn-sm btn-outline-warning py-1 px-2.5 fw-bold" id="modalOpenChangePinBtn" style="border-radius: 6px; font-size: 0.72rem;" type="button">
+                                <i class="bi bi-key-fill me-1"></i> बदलें
+                            </button>
+                        </div>
+
+                        <!-- Inline PIN change box -->
+                        <div id="modalInlineChangePinBox" class="mt-3 p-2.5 rounded d-none" style="background: rgba(0,0,0,0.2); border: 1px solid #30363d;">
+                            <div class="fw-bold text-white small mb-2"><i class="bi bi-pencil-square text-warning me-1"></i> 8-डिजिट सुरक्षा पासवर्ड बदलें</div>
+                            <div class="mb-2">
+                                <input type="password" id="modalCurrPinInput" maxlength="8" class="form-control form-control-sm" style="background: rgba(255,255,255,0.05); color: #fff; border-color: #30363d;" placeholder="वर्तमान 8-डिजिट पासवर्ड">
+                            </div>
+                            <div class="mb-2">
+                                <input type="password" id="modalNewPinInput" maxlength="8" class="form-control form-control-sm" style="background: rgba(255,255,255,0.05); color: #fff; border-color: #30363d;" placeholder="नया 8-डिजिट पासवर्ड">
+                            </div>
+                            <div class="mb-2">
+                                <input type="password" id="modalConfirmNewPinInput" maxlength="8" class="form-control form-control-sm" style="background: rgba(255,255,255,0.05); color: #fff; border-color: #30363d;" placeholder="नया पासवर्ड पुष्टि करें">
+                            </div>
+                            <div id="modalChangePinFeedback" class="small mb-2 d-none"></div>
+                            <div class="d-flex gap-2">
+                                <button id="modalCancelChangePinBtn" class="btn btn-sm btn-outline-secondary flex-fill py-1" style="font-size:0.75rem;" type="button">रद्द करें</button>
+                                <button id="modalSaveNewPinBtn" class="btn btn-sm btn-primary flex-fill py-1 fw-bold" style="font-size:0.75rem;" type="button">सहेजें</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Editable User Info Form -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-slate-400"><i class="bi bi-person-fill text-primary"></i> आपका नाम (Your Name)</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="text" id="modalDisplayNameInput" class="form-control" style="background: rgba(255,255,255,0.05); color: inherit; border-color: #30363d; border-radius: 8px; font-size: 14px;" placeholder="अपना नाम दर्ज करें...">
+                            <button id="modalSaveNameBtn" class="btn btn-primary d-flex align-items-center justify-content-center" style="height: 38px; width: 38px; border-radius: 8px; background-color: #8b5cf6 !important; border-color: #8b5cf6 !important;"><i class="bi bi-check-lg fs-5"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-slate-400"><i class="bi bi-chat-quote-fill text-primary"></i> आपका बायो (Your Bio)</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="text" id="modalBioInput" class="form-control" style="background: rgba(255,255,255,0.05); color: inherit; border-color: #30363d; border-radius: 8px; font-size: 14px;" placeholder="अपना बायो दर्ज करें...">
+                            <button id="modalSaveBioBtn" class="btn btn-primary d-flex align-items-center justify-content-center" style="height: 38px; width: 38px; border-radius: 8px; background-color: #8b5cf6 !important; border-color: #8b5cf6 !important;"><i class="bi bi-check-lg fs-5"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Subscription Plan Selection -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-slate-400"><i class="bi bi-gem text-primary"></i> सदस्यता प्लान (Subscription Plan)</label>
+                        <select id="modalPlanSelect" class="form-select" style="background: rgba(255,255,255,0.05); color: inherit; border-color: #30363d; border-radius: 8px; font-size: 14px; cursor: pointer;">
+                            <option value="Basic" style="background: #161b22; color: #c9d1d9;">बेसिक यूजर (Basic User)</option>
+                            <option value="Pro" style="background: #161b22; color: #c9d1d9;" selected>प्रो विश्लेषक (Pro Analyst)</option>
+                            <option value="Enterprise" style="background: #161b22; color: #c9d1d9;">एंटरप्राइज प्रो (Enterprise)</option>
+                        </select>
+                    </div>
+
+                    <!-- Usage Statistics Dashboard Card -->
+                    <div class="card border-0 mb-1 shadow-sm" style="border-radius: 12px; border: 1px solid #30363d; background: rgba(255, 255, 255, 0.02);">
+                        <div class="card-body p-3">
+                            <h6 class="card-title fw-bold mb-3 small" style="color: #ffd07a;"><i class="bi bi-activity text-primary"></i> वास्तविक समय के आँकड़े (Real-time Stats)</h6>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="p-2 rounded text-center" style="border: 1px solid #30363d; background: rgba(0,0,0,0.15);">
+                                        <div id="modalStatTotalRows" class="fs-5 fw-bold text-success">-</div>
+                                        <div class="text-muted small" style="font-size: 0.72rem;">डेटा पंक्तियाँ</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-2 rounded text-center" style="border: 1px solid #30363d; background: rgba(0,0,0,0.15);">
+                                        <div id="modalStatTotalCols" class="fs-5 fw-bold text-primary">-</div>
+                                        <div class="text-muted small" style="font-size: 0.72rem;">स्तंभ (Columns)</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-2 rounded text-center" style="border: 1px solid #30363d; background: rgba(0,0,0,0.15);">
+                                        <div id="modalStatTheme" class="fs-5 fw-bold text-info">-</div>
+                                        <div class="text-muted small" style="font-size: 0.72rem;">सक्रिय थीम</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-2 rounded text-center" style="border: 1px solid #30363d; background: rgba(0,0,0,0.15);">
+                                        <div id="modalStatSync" class="fs-5 fw-bold text-warning" style="font-size: 0.9rem !important;">सुरक्षित क्लाउड</div>
+                                        <div class="text-muted small" style="font-size: 0.72rem;">सिंक प्रदाता</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-between" style="border-top: 1px solid #30363d; padding: 16px 24px;">
+                    <button type="button" id="modalLogoutBtn" class="btn btn-outline-danger fw-bold"><i class="bi bi-box-arrow-right me-1"></i> लॉग आउट (Log Out)</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">बंद करें (Close)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Luckysheet JS from Forked Repo -->
+    <script src="https://dhaval-vedra.github.io/Luckysheet/dist/plugins/js/plugin.js"></script>
+    <script src="https://dhaval-vedra.github.io/Luckysheet/dist/luckysheet.umd.js"></script>
+    
+    <!-- Demo Data -->
+    <script src="https://dhaval-vedra.github.io/Luckysheet/dist/demoData/demoFeature.js"></script>
+    <script src="https://dhaval-vedra.github.io/Luckysheet/dist/demoData/sheetFormula.js"></script>
+    <script src="https://dhaval-vedra.github.io/Luckysheet/dist/demoData/sheetCell.js"></script>
+    <script src="https://dhaval-vedra.github.io/Luckysheet/dist/demoData/sheetConditionFormat.js"></script>
+    <script src="https://dhaval-vedra.github.io/Luckysheet/dist/demoData/sheetTable.js"></script>
+    <script src="https://dhaval-vedra.github.io/Luckysheet/dist/demoData/sheetComment.js"></script>
+    <script src="https://dhaval-vedra.github.io/Luckysheet/dist/demoData/sheetPivotTableData.js"></script>
+    <script src="https://dhaval-vedra.github.io/Luckysheet/dist/demoData/sheetPivotTable.js"></script>
+    <script src="https://dhaval-vedra.github.io/Luckysheet/dist/demoData/sheetSparkline.js"></script>
+    <script src="https://dhaval-vedra.github.io/Luckysheet/dist/demoData/sheetChart.js"></script>
+    <script src="https://dhaval-vedra.github.io/Luckysheet/dist/demoData/sheetPicture.js"></script>
+    <script src="https://dhaval-vedra.github.io/Luckysheet/dist/demoData/sheetDataVerification.js"></script>
+
+    <!-- External TypeScript Module for Data Editor -->
+    <script type="module" src="/src/js/editData.ts"></script>
+</body>
+</html>
